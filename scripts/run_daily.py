@@ -16,8 +16,9 @@ from shorts_automation.pipeline import run_pipeline  # noqa: E402
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="영상만 생성하고 업로드는 하지 않습니다.")
+    parser.add_argument("--force", action="store_true", help="오늘 이미 실행한 경우에도 강제로 재실행합니다.")
     args = parser.parse_args()
-    result = run_pipeline(PROJECT_ROOT, dry_run=args.dry_run)
+    result = run_pipeline(PROJECT_ROOT, dry_run=args.dry_run, force=args.force)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 
