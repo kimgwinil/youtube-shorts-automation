@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 22 * * *"
   workflow_dispatch:
+    inputs:
+      force:
+        description: "오늘 이미 업로드된 경우 강제 실행 (true/false)"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -57,7 +62,11 @@ jobs:
 
       - name: Generate and upload
         run: |
-          python scripts/run_daily.py
+          FORCE_FLAG=""
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+          python scripts/run_daily.py $FORCE_FLAG
 
       - name: Persist state
         run: |
