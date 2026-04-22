@@ -5,7 +5,7 @@
 1. 서울 기준 날짜, 요일, 계절, 날씨를 읽고
 2. 명언 풀에서 오늘 분위기에 맞는 글귀를 선택하고
 3. AI로 한국어 대본과 새로운 배경 이미지를 생성하고
-4. 절차적으로 새로운 배경음악을 생성하고
+4. Gemini Lyria RealTime으로 새로운 배경음악을 생성하고
 5. YouTube에 업로드한 뒤
 6. `data/state.json`을 커밋해 중복을 피합니다
 
@@ -27,6 +27,11 @@
 
 - OpenAI API 키
 - 대본 생성과 배경 이미지 생성에 사용
+
+### `GEMINI_API_KEY`
+
+- Gemini API 키
+- Lyria RealTime 배경음악 생성에 사용
 
 ### `YOUTUBE_CLIENT_SECRET_JSON`
 
@@ -55,7 +60,7 @@
 ## 설정 순서
 
 1. 이 프로젝트를 GitHub 저장소로 올립니다.
-2. 위 3개 Secret을 등록합니다.
+2. 위 4개 Secret을 등록합니다.
 3. `Actions` 탭에서 `Daily YouTube Short`를 `workflow_dispatch`로 1회 실행합니다.
 4. 업로드 결과를 확인합니다.
 5. 이후 매일 오전 7시 KST에 자동 실행됩니다.
@@ -65,4 +70,3 @@
 - GitHub Actions는 로컬처럼 파일을 계속 들고 있지 않으므로 매 실행마다 새 환경입니다.
 - 따라서 배경 이미지와 음악은 그날 새로 생성하도록 구성했습니다.
 - YouTube 토큰이 만료되면 로컬에서 다시 인증한 뒤 새 `token.json` 내용을 Secret으로 업데이트해야 합니다.
-

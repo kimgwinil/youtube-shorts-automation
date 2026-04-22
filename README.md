@@ -56,6 +56,7 @@ pip install -r requirements.txt
 - `YOUTUBE_TOKEN_FILE`: 최초 인증 후 저장할 토큰 파일 경로
 - `FONT_FILE`: 한글 표시 가능한 폰트 경로
 - `BACKGROUND_DIR`: 배경 이미지/영상 폴더
+- `GEMINI_API_KEY`: Gemini Lyria RealTime 음악 생성용 API 키
 
 ### 3. 유튜브 API 설정
 
@@ -121,7 +122,7 @@ content/backgrounds/
 
 ## 배경음악 파일
 
-`content/music/<bgm_mood>` 폴더에 음악 파일을 넣으면 자동으로 루프/페이드 처리되어 합성됩니다.
+기본 동작은 Gemini `Lyria RealTime`으로 그날 사용할 배경음악을 새로 생성하는 것입니다. Gemini 키가 없거나 생성이 실패하면 `content/music/<bgm_mood>`의 로컬 파일로 fallback 합니다.
 
 ```text
 content/music/
@@ -135,9 +136,12 @@ content/music/
     ambient_pad.mp3
 ```
 
-지원 확장자:
+fallback 자산 지원 확장자:
 
 - `.mp3`, `.m4a`, `.wav`, `.aac`
+
+Gemini 음악 생성은 Google 공식 문서 기준 `WebSocket 기반 Lyria RealTime`을 사용합니다.
+- 문서: https://ai.google.dev/gemini-api/docs/music-generation
 
 ## 실행
 

@@ -18,6 +18,7 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
     config = load_config(project_root)
     background_override = None
     bgm_override = None
+    bgm_signature = None
 
     today = datetime.now(ZoneInfo(config.timezone_name)).strftime("%Y-%m-%d")
     state = load_state(config.state_file)
@@ -42,14 +43,20 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
         )
         script = package.script
         background_override = package.background_path
-        bgm_override = generate_music(
-            script=script,
-            signature=package.bgm_signature,
-            output_dir=config.output_dir,
-        )
+        bgm_signature = package.bgm_signature
     else:
         quote = pick_next_quote(config.quotes_file, config.state_file)
         script = build_script(quote)
+        bgm_signature = f"{today}_{script.quote.quote_id[:12]}"
+
+    bgm_override = generate_music(
+        script=script,
+        signature=bgm_signature,
+        output_dir=config.output_dir,
+        gemini_api_key=config.gemini_api_key,
+        gemini_model=config.gemini_music_model,
+        prefer_gemini=config.enable_gemini_music,
+    )
 
     render_result = render_short(
         script=script,

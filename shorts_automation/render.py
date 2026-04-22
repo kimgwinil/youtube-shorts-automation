@@ -225,8 +225,9 @@ def _filter_graph(num_line_overlays: int, has_bgm: bool, duration: float) -> Tup
     if has_bgm:
         bgm_index = author_index + 1
         parts.append(
-            f"[{bgm_index}:a]volume=0.45,afade=t=in:st=0:d=1.5,"
-            f"afade=t=out:st={max(duration - 2.0, 0):.2f}:d=2[aout]"
+            f"[{bgm_index}:a]highpass=f=320,lowpass=f=5200,volume=0.32,"
+            f"afade=t=in:st=0:d=1.5,afade=t=out:st={max(duration - 2.0, 0):.2f}:d=2,"
+            "dynaudnorm=f=80:g=3,alimiter=limit=0.85[aout]"
         )
         audio_map = "[aout]"
 
