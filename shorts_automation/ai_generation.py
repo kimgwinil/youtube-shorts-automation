@@ -148,8 +148,13 @@ def _generate_script_with_ai(
   "total_duration": 24.0
 }}
 """
-    response = client.responses.create(model=text_model, input=prompt)
-    parsed = json.loads(response.output_text)
+    response = client.chat.completions.create(
+        model=text_model,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+    )
+    raw = response.choices[0].message.content or ""
+    parsed = json.loads(raw)
     return VideoScript(
         quote=quote,
         title=parsed["title"][:90],

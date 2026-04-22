@@ -5,7 +5,6 @@ from pathlib import Path
 from .ai_generation import build_daily_package
 from .daily_context import build_daily_context
 from .config import load_config
-from .music_generation import generate_music
 from .render import render_short
 from .script_builder import build_script, pick_next_quote
 from .upload import upload_video
@@ -34,11 +33,6 @@ def run_pipeline(project_root: Path, dry_run: bool = False) -> dict:
         )
         script = package.script
         background_override = package.background_path
-        bgm_override = generate_music(
-            script=script,
-            signature=package.bgm_signature,
-            output_dir=config.output_dir,
-        )
     else:
         quote = pick_next_quote(config.quotes_file, config.state_file)
         script = build_script(quote)

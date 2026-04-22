@@ -51,7 +51,7 @@ def load_config(project_root: Path) -> AppConfig:
         location_latitude=float(os.environ.get("LOCATION_LATITUDE", "37.5665")),
         location_longitude=float(os.environ.get("LOCATION_LONGITUDE", "126.9780")),
         openai_api_key=os.environ.get("OPENAI_API_KEY", ""),
-        openai_text_model=os.environ.get("OPENAI_TEXT_MODEL", "gpt-5"),
+        openai_text_model=os.environ.get("OPENAI_TEXT_MODEL", "gpt-4o"),
         openai_image_model=os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1"),
         enable_ai_generation=os.environ.get("ENABLE_AI_GENERATION", "true").lower() == "true",
     )
