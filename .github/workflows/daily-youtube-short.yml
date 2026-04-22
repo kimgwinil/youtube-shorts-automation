@@ -18,7 +18,7 @@ jobs:
       LOCATION_LATITUDE: "37.5665"
       LOCATION_LONGITUDE: "126.9780"
       BACKGROUND_DIR: ${{ github.workspace }}/content/backgrounds
-      FONT_FILE: /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
+      FONT_FILE: ${{ github.workspace }}/runtime-assets/NotoSansCJKkr-Regular.otf
       YOUTUBE_CLIENT_SECRETS_FILE: ${{ github.workspace }}/secrets/client_secret.json
       YOUTUBE_TOKEN_FILE: ${{ github.workspace }}/secrets/token.json
       DEFAULT_VISIBILITY: private
@@ -39,10 +39,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install system packages
+      - name: Prepare runtime assets
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-noto-cjk
+          mkdir -p runtime-assets
+          curl -L https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf -o runtime-assets/NotoSansCJKkr-Regular.otf
 
       - name: Prepare runtime files
         run: |
