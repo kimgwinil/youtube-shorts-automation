@@ -9,6 +9,12 @@
 5. YouTube에 업로드한 뒤
 6. `data/state.json`을 커밋해 중복을 피합니다
 
+중요:
+
+- 이 방식은 `GitHub 서버`에서 실행됩니다.
+- 따라서 `내 컴퓨터가 꺼져 있어도` 자동 업로드가 계속 동작합니다.
+- 조건은 저장소가 GitHub에 푸시되어 있고, `Actions`가 활성화되어 있으며, 필요한 `Secrets`가 모두 등록되어 있어야 합니다.
+
 ## 실행 시각
 
 - GitHub cron: `0 22 * * *`
@@ -18,6 +24,8 @@
 주의:
 
 - GitHub Actions 스케줄은 수분 단위 지연이 생길 수 있습니다.
+- GitHub 스케줄 실행은 기본 브랜치의 워크플로만 사용합니다.
+- 저장소가 장기간 비활성 상태면 스케줄 워크플로가 일시 중지될 수 있습니다. 이 경우 `Actions` 탭에서 다시 활성화하면 됩니다.
 
 ## 필요한 GitHub Secrets
 
@@ -64,6 +72,14 @@
 3. `Actions` 탭에서 `Daily YouTube Short`를 `workflow_dispatch`로 1회 실행합니다.
 4. 업로드 결과를 확인합니다.
 5. 이후 매일 오전 7시 KST에 자동 실행됩니다.
+
+## 꼭 확인할 점
+
+1. 저장소 기본 브랜치가 `main`인지 확인합니다.
+2. `Settings > Actions > General`에서 Actions 실행이 허용되어 있는지 확인합니다.
+3. `Settings > Secrets and variables > Actions`에 아래 4개 Secret이 모두 들어 있는지 확인합니다.
+4. `Actions > Daily YouTube Short`에서 수동 실행 1회를 성공시킵니다.
+5. 이후에는 로컬 Mac 전원이 꺼져 있어도 GitHub가 자체적으로 실행합니다.
 
 ## 중요한 제약
 
