@@ -10,6 +10,7 @@ from typing import List, Sequence, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
+from .ffmpeg_utils import resolve_ffmpeg
 from .script_builder import VideoScript
 
 
@@ -149,7 +150,7 @@ def _build_render_cmd(
     output: Path,
     duration: float,
 ) -> List[str]:
-    cmd = ["ffmpeg", "-y"]
+    cmd = [resolve_ffmpeg(), "-y"]
     if background.suffix.lower() in IMAGE_EXTS:
         cmd.extend(["-loop", "1", "-i", str(background)])
     else:

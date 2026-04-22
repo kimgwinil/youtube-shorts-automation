@@ -5,6 +5,7 @@ from pathlib import Path
 import random
 import subprocess
 
+from .ffmpeg_utils import resolve_ffmpeg
 from .script_builder import VideoScript
 
 
@@ -22,7 +23,7 @@ def generate_music(script: VideoScript, signature: str, output_dir: Path) -> Pat
     notes, base_volume, lowpass = mood_profiles.get(script.quote.bgm_mood, ([220, 330, 440], 0.02, 1100))
 
     layers = []
-    cmd = ["ffmpeg", "-y"]
+    cmd = [resolve_ffmpeg(), "-y"]
     for index, note in enumerate(notes):
         shifted_note = round(note * (1 + rng.uniform(-0.02, 0.02)), 2)
         cmd.extend(["-f", "lavfi", "-i", f"sine=frequency={shifted_note}:sample_rate=44100:duration=34"])
