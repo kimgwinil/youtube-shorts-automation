@@ -17,7 +17,7 @@ jobs:
       LOCATION_NAME: Seoul, KR
       LOCATION_LATITUDE: "37.5665"
       LOCATION_LONGITUDE: "126.9780"
-      BACKGROUND_DIR: ${{ github.workspace }}/output/generated_backgrounds
+      BACKGROUND_DIR: ${{ github.workspace }}/content/backgrounds
       FONT_FILE: /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
       YOUTUBE_CLIENT_SECRETS_FILE: ${{ github.workspace }}/secrets/client_secret.json
       YOUTUBE_TOKEN_FILE: ${{ github.workspace }}/secrets/token.json
@@ -66,4 +66,3 @@ jobs:
           git add data/state.json
           git diff --cached --quiet || git commit -m "Update daily shorts state"
           git push
-
