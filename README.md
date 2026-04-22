@@ -179,6 +179,16 @@ cd /Users/kimgwonil/youtube-shorts-automation
 ./scripts/install_launchd.sh
 ```
 
+설치 후 동작:
+
+- 로그인/부팅 직후: GitHub 원격과 저장소 동기화 시도
+- 로그인/부팅 직후: 오전 7시 이후인데 오늘 업로드가 누락된 경우 즉시 catch-up 업로드 시도
+- 매일 예약 시각: 쇼츠 생성 및 업로드 실행
+
+부팅 시 동기화는 작업 트리가 깨끗할 때만 `fast-forward pull`을 수행합니다.
+로컬 변경사항이 있거나 브랜치가 분기된 경우에는 자동 병합하지 않고 로그만 남깁니다.
+catch-up 업로드는 `data/state.json`에 오늘 날짜가 없을 때만 실행됩니다.
+
 GitHub Actions로 노트북 없이 실행하려면 아래 문서를 따르세요.
 
 - 워크플로우: [.github/workflows/daily-youtube-short.yml](/Users/kimgwonil/youtube-shorts-automation/.github/workflows/daily-youtube-short.yml)
