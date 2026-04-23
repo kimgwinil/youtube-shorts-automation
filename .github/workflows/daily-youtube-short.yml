@@ -32,7 +32,7 @@ jobs:
       FONT_FILE: ${{ github.workspace }}/runtime-assets/NotoSansCJKkr-Regular.otf
       YOUTUBE_CLIENT_SECRETS_FILE: ${{ github.workspace }}/secrets/client_secret.json
       YOUTUBE_TOKEN_FILE: ${{ github.workspace }}/secrets/token.json
-      DEFAULT_VISIBILITY: private
+      DEFAULT_VISIBILITY: public
       DEFAULT_CATEGORY_ID: "27"
       SHORTS_HASHTAGS: "#쇼츠 #명언 #고전 #자기계발"
       ENABLE_AI_GENERATION: "true"
