@@ -10,7 +10,10 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+]
 
 
 def upload_video(
@@ -23,6 +26,19 @@ def upload_video(
 ) -> dict:
     credentials = _load_credentials(client_secrets_file, token_file)
     youtube = build("youtube", "v3", credentials=credentials)
+
+    try:
+        ch = youtube.channels().list(part="snippet", mine=True).execute()
+        items = ch.get("items", [])
+        if items:
+            ch_title = items[0]["snippet"]["title"]
+            ch_id = items[0]["id"]
+            print(f"[upload] 업로드 대상 채널: {ch_title} (id={ch_id})")
+        else:
+            print("[upload] 경고: 인증된 계정에 YouTube 채널이 없습니다.")
+    except Exception as e:
+        print(f"[upload] 채널 정보 조회 실패 (토큰 권한 부족일 수 있음): {e}")
+
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
 
     body = {
