@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import random
 from zoneinfo import ZoneInfo
 
 from .ai_generation import build_daily_package
@@ -19,6 +20,12 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
     background_override = None
     bgm_override = None
     bgm_signature = None
+    context = build_daily_context(
+        timezone_name=config.timezone_name,
+        location_name=config.location_name,
+        latitude=config.location_latitude,
+        longitude=config.location_longitude,
+    )
 
     today = datetime.now(ZoneInfo(config.timezone_name)).strftime("%Y-%m-%d")
     state = load_state(config.state_file)
@@ -26,19 +33,14 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
         return {"skipped": True, "reason": f"이미 오늘({today}) 영상이 업로드되었습니다. --force로 강제 실행 가능."}
 
     if config.enable_ai_generation and config.openai_api_key:
-        context = build_daily_context(
-            timezone_name=config.timezone_name,
-            location_name=config.location_name,
-            latitude=config.location_latitude,
-            longitude=config.location_longitude,
-        )
         package = build_daily_package(
             quotes_file=config.quotes_file,
             state_file=config.state_file,
             output_dir=config.output_dir,
             openai_api_key=config.openai_api_key,
             text_model=config.openai_text_model,
-            image_model=config.openai_image_model,
+            image_model=config.gemini_image_model,
+            gemini_api_key=config.gemini_api_key,
             context=context,
         )
         script = package.script
@@ -46,13 +48,15 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
         bgm_signature = package.bgm_signature
     else:
         quote = pick_next_quote(config.quotes_file, config.state_file)
-        script = build_script(quote)
+        selected_visual_style = _select_non_ai_visual_style(quote=quote, state=state, date_iso=context.date_iso)
+        script = build_script(quote, visual_style_override=selected_visual_style)
         bgm_signature = f"{today}_{script.quote.quote_id[:12]}"
 
     bgm_override = generate_music(
         script=script,
         signature=bgm_signature,
         output_dir=config.output_dir,
+        music_dir=config.music_dir,
         gemini_api_key=config.gemini_api_key,
         gemini_model=config.gemini_music_model,
         prefer_gemini=config.enable_gemini_music,
@@ -86,6 +90,9 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
     dates = [d for d in current_state.get("recent_dates", []) if d != today]
     dates.append(today)
     current_state["recent_dates"] = dates[-20:]
+    styles = [style for style in current_state.get("recent_visual_styles", []) if style != script.visual_style]
+    styles.append(script.visual_style)
+    current_state["recent_visual_styles"] = styles[-20:]
     save_state(config.state_file, current_state)
     return {
         "video_path": str(render_result.video_path),
@@ -93,3 +100,16 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
         "youtube_video_id": upload_result["id"],
         "uploaded": True,
     }
+
+
+def _select_non_ai_visual_style(quote, state: dict, date_iso: str) -> str:
+    style_pools = {
+        "dawn": ["photoreal", "watercolor", "ink", "calligraphy"],
+        "rain": ["ink", "watercolor", "photoreal", "calligraphy"],
+        "city": ["photoreal", "watercolor", "ink", "calligraphy"],
+    }
+    pool = style_pools.get(quote.mood, ["photoreal", "watercolor", "ink", "calligraphy"])
+    recent_styles = state.get("recent_visual_styles", [])[-3:]
+    candidates = [style for style in pool if style not in recent_styles]
+    seeded = random.Random(f"{quote.quote_id}|{date_iso}|non-ai-visual-style")
+    return seeded.choice(candidates or pool)

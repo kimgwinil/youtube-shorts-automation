@@ -16,6 +16,7 @@ _MUSIC_VERSION = "gemini-v1"
 _PCM_SAMPLE_RATE = 48_000
 _PCM_CHANNELS = 2
 _PCM_SAMPLE_WIDTH = 2
+_AUDIO_EXTS = {".mp3", ".m4a", ".wav", ".aac"}
 
 _GEMINI_MOOD_PROFILES: dict = {
     "meditative": {
@@ -88,6 +89,7 @@ def generate_music(
     script: VideoScript,
     signature: str,
     output_dir: Path,
+    music_dir: Path | None = None,
     gemini_api_key: str = "",
     gemini_model: str = "models/lyria-realtime-exp",
     prefer_gemini: bool = False,
@@ -107,7 +109,102 @@ def generate_music(
         except Exception as exc:
             print(f"[music] Gemini 음악 생성 실패, 로컬 fallback 사용: {exc}")
 
+    library_track = _pick_library_track(music_dir=music_dir, mood=script.quote.bgm_mood, signature=signature)
+    if library_track:
+        varied_track = _render_library_variation(
+            source_track=library_track,
+            script=script,
+            signature=signature,
+            output_dir=output_dir,
+        )
+        print(f"[music] 라이브러리 음원 변주 사용: {varied_track} (source: {library_track})")
+        return varied_track
+
+    print("[music] 라이브러리 음원이 없어 로컬 합성 fallback 사용")
     return _generate_music_locally(script=script, signature=signature, output_dir=output_dir)
+
+
+def _pick_library_track(music_dir: Path | None, mood: str, signature: str) -> Path | None:
+    if not music_dir:
+        return None
+
+    candidates: list[Path] = []
+    for candidate_dir in [music_dir / mood, music_dir / "default"]:
+        if not candidate_dir.exists():
+            continue
+        candidates.extend(
+            sorted(
+                path
+                for path in candidate_dir.iterdir()
+                if path.is_file() and path.suffix.lower() in _AUDIO_EXTS
+            )
+        )
+        if candidates:
+            break
+
+    if not candidates:
+        return None
+
+    seeded = random.Random(f"{mood}|{signature}")
+    return seeded.choice(candidates)
+
+
+def _render_library_variation(
+    source_track: Path,
+    script: VideoScript,
+    signature: str,
+    output_dir: Path,
+) -> Path:
+    output_path = output_dir / f"{signature}_library_mix.m4a"
+    profile = _library_filter_profile(script=script, signature=signature)
+    cmd = [
+        resolve_ffmpeg(),
+        "-y",
+        "-stream_loop",
+        "-1",
+        "-i",
+        str(source_track),
+        "-t",
+        f"{script.total_duration:.2f}",
+        "-af",
+        profile,
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
+        str(output_path),
+    ]
+    subprocess.run(cmd, check=True)
+    return output_path
+
+
+def _library_filter_profile(script: VideoScript, signature: str) -> str:
+    style_seed = int(sha1(f"{signature}|{script.visual_style}|{script.quote.quote_id}".encode("utf-8")).hexdigest()[:8], 16)
+    variants = {
+        "meditative": [
+            "highpass=f=180,lowpass=f=5400,equalizer=f=260:t=q:w=1.1:g=-4,aecho=0.7:0.35:180|360:0.08|0.04,volume=0.92",
+            "highpass=f=210,lowpass=f=5000,atempo=0.97,equalizer=f=2400:t=q:w=1.0:g=1.8,stereotools=softclip=0,volume=0.90",
+            "highpass=f=190,lowpass=f=5600,chorus=0.5:0.9:20|30:0.10|0.08:0.25|0.20:0.4|0.3,volume=0.88",
+        ],
+        "reflective": [
+            "highpass=f=190,lowpass=f=5200,equalizer=f=280:t=q:w=1.2:g=-5,equalizer=f=2200:t=q:w=1.0:g=2.0,aecho=0.68:0.4:240|480:0.10|0.05,volume=0.93",
+            "highpass=f=200,lowpass=f=5600,atempo=0.99,equalizer=f=3000:t=q:w=0.9:g=2.5,stereotools=balance_out=-0.02,volume=0.91",
+            "highpass=f=220,lowpass=f=5000,extrastereo=m=1.8,crossfeed=strength=0.15,equalizer=f=250:t=q:w=1.1:g=-4.5,volume=0.89",
+        ],
+        "focused": [
+            "highpass=f=220,lowpass=f=6200,atempo=1.02,equalizer=f=240:t=q:w=1.0:g=-4,equalizer=f=3200:t=q:w=0.8:g=2.2,volume=0.94",
+            "highpass=f=240,lowpass=f=6500,atempo=1.01,extrastereo=m=1.4,equalizer=f=2800:t=q:w=1.1:g=2.0,volume=0.92",
+            "highpass=f=200,lowpass=f=6000,chorus=0.4:0.8:18|24:0.08|0.06:0.20|0.18:0.3|0.25,equalizer=f=260:t=q:w=1.0:g=-3.5,volume=0.90",
+        ],
+    }
+    base_profile = variants.get(script.quote.bgm_mood, variants["meditative"])
+    profile = base_profile[style_seed % len(base_profile)]
+    fade = (
+        f"afade=t=in:st=0:d=1.5,"
+        f"afade=t=out:st={max(script.total_duration - 2.0, 0):.2f}:d=2.0,"
+        "dynaudnorm=f=90:g=3,alimiter=limit=0.84"
+    )
+    return f"{profile},{fade}"
 
 
 async def _generate_music_with_gemini(
@@ -183,10 +280,24 @@ async def _generate_music_with_gemini(
 
 def _build_gemini_prompts(script: VideoScript, base_prompts: list[tuple[str, float]]) -> list[tuple[str, float]]:
     prompts = list(base_prompts)
-    prompts.append((f"{script.quote.mood} mood, {script.quote.visual_style} visual atmosphere", 0.45))
-    prompts.append((f"inspired by: {script.quote.interpretation}", 0.35))
-    prompts.append(("background score for a short inspirational video", 0.55))
+    prompts.append((f"{script.quote.mood} mood, {script.visual_style} visual atmosphere", 0.45))
+    prompts.append((f"inspired by: {script.quote.interpretation}", 0.45))
+    prompts.append((f"theme: {script.quote.context}", 0.35))
+    prompts.append((script.bgm_prompt_en, 0.75))
+    prompts.append((_quote_music_direction(script), 0.35))
+    prompts.append(("background score for a short inspirational video, varied arrangement, no repeated bass drone", 0.55))
     return prompts
+
+
+def _quote_music_direction(script: VideoScript) -> str:
+    text = f"{script.quote.quote} {script.quote.interpretation} {script.quote.context}".lower()
+    if any(keyword in text for keyword in ["행동", "실천", "실행", "관리", "측정", "혁신", "리더십"]):
+        return "gentle forward motion, clear pulse, disciplined piano or marimba, light rhythmic lift"
+    if any(keyword in text for keyword in ["반성", "근심", "비", "흔들", "부끄러움", "사랑", "적자의 마음"]):
+        return "reflective texture, soft piano, restrained strings, subtle rain-like ambience, emotional but controlled"
+    if any(keyword in text for keyword in ["배움", "새벽", "지혜", "여백", "마루", "정원", "대나무"]):
+        return "quiet meditative space, airy pads, warm resonance, minimal low end, contemplative pacing"
+    return "balanced inspirational ambient, warm midrange, light melodic contour, no heavy bass"
 
 
 def _transcode_pcm_to_m4a(raw_path: Path, output_path: Path, duration: float) -> None:
@@ -235,8 +346,8 @@ def _generate_music_locally(script: VideoScript, signature: str, output_dir: Pat
     noise_index = len(freqs)
     noise_chain = (
         f"[{noise_index}:a]highpass=f={profile['noise_highpass']},"
-        "lowpass=f=2600,"
-        f"volume={profile['noise_volume']},"
+        "lowpass=f=3200,"
+        f"volume={profile['noise_volume'] * 0.7:.4f},"
         "afade=t=in:st=0:d=3,"
         "afade=t=out:st=29:d=5,"
         "pan=stereo|c0=0.72*c0|c1=0.72*c0[n0]"
@@ -251,7 +362,7 @@ def _generate_music_locally(script: VideoScript, signature: str, output_dir: Pat
         right = round(rng.uniform(0.50, 0.88), 2)
         tone_chains.append(
             f"[{index}:a]highpass=f={profile['highpass']},"
-            f"lowpass=f={profile['lowpass']},"
+            f"lowpass=f={profile['lowpass'] + 500},"
             f"volume={volume},"
             f"vibrato=f={vibrato_freq}:d={vibrato_depth},"
             "afade=t=in:st=0:d=2.5,"
@@ -265,9 +376,12 @@ def _generate_music_locally(script: VideoScript, signature: str, output_dir: Pat
         + ";"
         + f"{mix_inputs}amix=inputs={len(freqs) + 1}:normalize=0,"
         f"{profile['echo']},"
+        "equalizer=f=220:t=q:w=1.2:g=-7,"
+        "equalizer=f=320:t=q:w=1.0:g=-5,"
+        "equalizer=f=2600:t=q:w=1.0:g=2.5,"
         "dynaudnorm=f=120:g=3,"
         "alimiter=limit=0.80,"
-        "volume=1.25[aout]"
+        "volume=1.10[aout]"
     )
     cmd.extend([
         "-filter_complex",

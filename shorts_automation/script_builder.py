@@ -41,6 +41,9 @@ class VideoScript:
     author_line: str
     source_line: str
     visual_prompt: str
+    image_prompt_en: str
+    bgm_prompt_en: str
+    visual_style: str
     total_duration: float
 
 def _load_quotes(quotes_file: Path) -> List[QuoteEntry]:
@@ -68,7 +71,8 @@ def pick_next_quote(quotes_file: Path, state_file: Path) -> QuoteEntry:
     return quote
 
 
-def build_script(quote: QuoteEntry) -> VideoScript:
+def build_script(quote: QuoteEntry, visual_style_override: str | None = None) -> VideoScript:
+    visual_style = visual_style_override or quote.visual_style
     quote_chunks = _split_text(quote.quote, max_len=20, target_lines=2)
     interpretation_chunks = _split_text(quote.interpretation, max_len=24, target_lines=2)
     lines = [
@@ -86,13 +90,13 @@ def build_script(quote: QuoteEntry) -> VideoScript:
             f"출전: {quote.source}",
             f"명언: {quote.quote}",
             f"해석: {quote.interpretation}",
-            f"배경 스타일: {quote.visual_style}",
+            f"배경 스타일: {visual_style}",
             f"배경음악 분위기: {quote.bgm_mood}",
             "",
             "#shorts #명언 #고전 #자기계발",
         ]
     )
-    tags = ["shorts", "명언", "자기계발", _author_display_name(quote.author), quote.visual_style]
+    tags = ["shorts", "명언", "자기계발", _author_display_name(quote.author), visual_style]
     return VideoScript(
         quote=quote,
         title=title[:90],
@@ -101,7 +105,10 @@ def build_script(quote: QuoteEntry) -> VideoScript:
         lines=lines,
         author_line=_author_display_name(quote.author),
         source_line=quote.source,
-        visual_prompt=_build_visual_prompt(quote),
+        visual_prompt=_build_visual_prompt(quote, visual_style),
+        image_prompt_en=_build_visual_prompt_en(quote, visual_style),
+        bgm_prompt_en=_build_bgm_prompt_en(quote),
+        visual_style=visual_style,
         total_duration=max(24.0, len(lines) * 3.8),
     )
 
@@ -124,7 +131,7 @@ def _build_closing(quote: QuoteEntry) -> str:
     return _compact_text(closings.get(quote.mood, "한 문장을 오래 붙들면 오늘의 방향이 달라진다"), limit=38)
 
 
-def _build_visual_prompt(quote: QuoteEntry) -> str:
+def _build_visual_prompt(quote: QuoteEntry, visual_style: str) -> str:
     subject = quote.context or quote.interpretation
     style_map = {
         "photoreal": "실사 사진처럼 정교한 빛과 질감",
@@ -132,7 +139,7 @@ def _build_visual_prompt(quote: QuoteEntry) -> str:
         "ink": "먹의 농담과 여백이 살아있는 수묵화",
         "calligraphy": "동양 서화풍의 붓결과 고요한 여백",
     }
-    style_desc = style_map.get(quote.visual_style, style_map["photoreal"])
+    style_desc = style_map.get(visual_style, style_map["photoreal"])
     mood_desc = {
         "dawn": "새벽빛, 안개, 고요한 공기",
         "rain": "비 내리는 창가, 젖은 돌길, 차분한 분위기",
@@ -141,6 +148,38 @@ def _build_visual_prompt(quote: QuoteEntry) -> str:
     return (
         f"{style_desc}, {mood_desc}, {subject}, 인물은 작게 혹은 뒷모습으로, "
         "세로형 9:16 구도, 텍스트를 올릴 여백이 충분한 중앙 하단 구성"
+    )
+
+
+def _build_visual_prompt_en(quote: QuoteEntry, visual_style: str) -> str:
+    style_map = {
+        "photoreal": "photorealistic cinematic photography",
+        "watercolor": "soft watercolor illustration with visible paper texture",
+        "ink": "East Asian ink wash painting with expressive brushwork",
+        "calligraphy": "East Asian calligraphy painting style with elegant empty space",
+    }
+    mood_desc = {
+        "dawn": "dawn light, mist, calm air",
+        "rain": "rainy window, wet stone path, reflective quiet mood",
+        "city": "early morning city atmosphere, restrained motion, organized space",
+    }.get(quote.mood, "quiet contemplative atmosphere")
+    subject = quote.context or quote.interpretation
+    return (
+        f"{style_map.get(visual_style, style_map['photoreal'])}, "
+        f"{mood_desc}, {subject}, vertical 9:16 composition, "
+        "background-focused scene, no central character, clean lower center for subtitles"
+    )
+
+
+def _build_bgm_prompt_en(quote: QuoteEntry) -> str:
+    mood_map = {
+        "meditative": "warm meditative ambient with gentle piano and airy resonance",
+        "reflective": "reflective ambient with soft piano, restrained strings, and emotional control",
+        "focused": "focused modern ambient with a clear pulse and light rhythmic motion",
+    }
+    return (
+        f"{mood_map.get(quote.bgm_mood, 'balanced inspirational ambient')}, "
+        f"inspired by {quote.interpretation}, no heavy bass, no vocals"
     )
 
 

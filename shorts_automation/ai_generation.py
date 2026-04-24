@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 from dataclasses import dataclass
 from hashlib import sha1
 import json
@@ -9,6 +8,8 @@ import random
 from typing import Any, Dict, List
 
 from openai import OpenAI
+from google import genai
+from google.genai import types
 
 from .daily_context import DailyContext
 from .script_builder import QuoteEntry, VideoScript, _load_quotes
@@ -18,8 +19,20 @@ from .state_store import load_state, save_state
 @dataclass
 class DailyPackage:
     script: VideoScript
-    background_path: Path
+    background_path: Path | None
     bgm_signature: str
+
+
+@dataclass
+class CreativeDirection:
+    theme: str
+    emotion: str
+    visual_style: str
+    scene_hint_ko: str
+    scene_prompt_en: str
+    bgm_mode: str
+    bgm_prompt_en: str
+    avoid: List[str]
 
 
 def build_daily_package(
@@ -29,17 +42,24 @@ def build_daily_package(
     openai_api_key: str,
     text_model: str,
     image_model: str,
+    gemini_api_key: str,
     context: DailyContext,
 ) -> DailyPackage:
     state = load_state(state_file)
     quote = _choose_quote(quotes_file, state, context)
-    script = _generate_unique_script(quote, state, openai_api_key, text_model, context)
-    background_path = _generate_background_image(script, output_dir, openai_api_key, image_model)
+    direction = _classify_creative_direction(quote, state, openai_api_key, text_model, context)
+    script = _generate_unique_script(quote, direction, state, openai_api_key, text_model, context)
+    background_path: Path | None = None
+    try:
+        background_path = _generate_background_image(script, output_dir, gemini_api_key, image_model)
+    except Exception as exc:
+        print(f"[image] Gemini/Imagen 배경 생성 실패, 로컬 fallback 사용: {exc}")
     bgm_signature = _music_signature(script, context)
 
     _append_unique(state, "used_quotes", quote.quote_id, 120)
     _append_unique(state, "recent_quote_ids", quote.quote_id, 20)
     _append_unique(state, "recent_titles", script.title, 20)
+    _append_unique(state, "recent_visual_styles", script.visual_style, 20)
     _append_unique(state, "recent_image_fingerprints", _image_fingerprint(script), 20)
     _append_unique(state, "recent_music_signatures", bgm_signature, 20)
     _append_unique(state, "recent_dates", context.date_iso, 20)
@@ -50,6 +70,7 @@ def build_daily_package(
 
 def _generate_unique_script(
     quote: QuoteEntry,
+    direction: CreativeDirection,
     state: Dict[str, Any],
     api_key: str,
     text_model: str,
@@ -60,7 +81,15 @@ def _generate_unique_script(
     avoid_note = ""
     script: VideoScript | None = None
     for attempt in range(4):
-        script = _generate_script_with_ai(quote, state, api_key, text_model, context, avoid_note=avoid_note)
+        script = _generate_script_with_ai(
+            quote,
+            direction,
+            state,
+            api_key,
+            text_model,
+            context,
+            avoid_note=avoid_note,
+        )
         if script.title not in recent_titles and _image_fingerprint(script) not in recent_fingerprints:
             return script
         avoid_note = (
@@ -87,6 +116,7 @@ def _choose_quote(quotes_file: Path, state: Dict[str, Any], context: DailyContex
 
 def _generate_script_with_ai(
     quote: QuoteEntry,
+    direction: CreativeDirection,
     state: Dict[str, Any],
     api_key: str,
     text_model: str,
@@ -95,6 +125,8 @@ def _generate_script_with_ai(
 ) -> VideoScript:
     client = OpenAI(api_key=api_key)
     recent_titles = state.get("recent_titles", [])[-8:]
+    recent_visual_fingerprints = state.get("recent_image_fingerprints", [])[-8:]
+    recent_visual_styles = state.get("recent_visual_styles", [])[-6:]
     prompt = f"""
 너는 한국어 유튜브 쇼츠 작가다.
 다음 고정 명언을 바탕으로 오늘 업로드할 한국어 쇼츠용 결과를 JSON으로만 출력하라.
@@ -113,12 +145,30 @@ def _generate_script_with_ai(
 - quote: {quote.quote}
 - interpretation: {quote.interpretation}
 - mood: {quote.mood}
-- visual_style: {quote.visual_style}
+- visual_style: {direction.visual_style}
 - bgm_mood: {quote.bgm_mood}
 - context: {quote.context}
 
 최근 제목:
 {json.dumps(recent_titles, ensure_ascii=False)}
+
+최근 시각 fingerprint:
+{json.dumps(recent_visual_fingerprints, ensure_ascii=False)}
+
+최근 사용 스타일:
+{json.dumps(recent_visual_styles, ensure_ascii=False)}
+
+이번 장면 힌트:
+- style: {direction.visual_style}
+- scene_ko: {direction.scene_hint_ko}
+- scene_en: {direction.scene_prompt_en}
+
+분류 트랙 결과:
+- theme: {direction.theme}
+- emotion: {direction.emotion}
+- bgm_mode: {direction.bgm_mode}
+- bgm_prompt_en: {direction.bgm_prompt_en}
+- avoid: {json.dumps(direction.avoid, ensure_ascii=False)}
 
 규칙:
 1. 명언 원문은 바꾸지 말 것.
@@ -130,6 +180,15 @@ def _generate_script_with_ai(
 7. visual_prompt는 오늘 날씨와 계절감이 드러나게.
 8. JSON 외 다른 텍스트 금지.
 9. 최근 결과와 비슷한 표현을 반복하지 말 것.
+10. visual_prompt는 인물 중심 캐릭터 이미지가 아니라 배경 중심 장면이어야 한다.
+11. 얼굴 클로즈업, 반복 가능한 동일 캐릭터, 애니풍 주인공, 마스코트형 인물은 금지한다.
+12. 사람이 필요하면 작고 익명적인 실루엣 또는 뒷모습 한 명 이하만 허용한다.
+13. 소품, 건축, 자연, 빛, 날씨 묘사를 우선하고 장면의 주인공은 분위기여야 한다.
+14. 서울의 랜드마크, 서울 스카이라인, 서울 도심 전경을 매번 반복하지 말 것.
+15. location 정보는 공기감 참고용이며, 장면은 정원, 서재, 창가, 골목, 산길, 마루, 강변, 작업실, 회의실 등으로 넓게 변주할 것.
+16. visual_style은 반드시 `{direction.visual_style}`로 유지할 것.
+17. image_prompt_en은 자연스러운 영어 한 문단으로 작성하고, 이미지 생성 모델에 직접 넣을 수 있어야 한다.
+18. bgm_prompt_en은 자연스러운 영어 한 문단으로 작성하고, 음악 생성 모델에 직접 넣을 수 있어야 한다.
 
 추가 지시:
 {avoid_note or "없음"}
@@ -143,7 +202,9 @@ def _generate_script_with_ai(
   "author_line": "...",
   "source_line": "...",
   "visual_prompt": "...",
-  "visual_style": "{quote.visual_style}",
+  "image_prompt_en": "...",
+  "bgm_prompt_en": "...",
+  "visual_style": "{direction.visual_style}",
   "bgm_mood": "{quote.bgm_mood}",
   "total_duration": 24.0
 }}
@@ -164,6 +225,12 @@ def _generate_script_with_ai(
         author_line=parsed["author_line"],
         source_line=parsed["source_line"],
         visual_prompt=parsed["visual_prompt"],
+        image_prompt_en=parsed.get(
+            "image_prompt_en",
+            _build_image_prompt_en(parsed["visual_prompt"], direction.visual_style, direction.scene_prompt_en),
+        ),
+        bgm_prompt_en=parsed.get("bgm_prompt_en", direction.bgm_prompt_en),
+        visual_style=parsed.get("visual_style", direction.visual_style),
         total_duration=float(parsed.get("total_duration", max(24.0, len(parsed["lines"]) * 3.8))),
     )
 
@@ -174,24 +241,169 @@ def _generate_background_image(
     api_key: str,
     image_model: str,
 ) -> Path:
-    client = OpenAI(api_key=api_key)
+    if not api_key:
+        raise RuntimeError("Gemini API 키가 없어 배경 이미지를 생성할 수 없습니다.")
+    client = genai.Client(api_key=api_key)
     output_dir.mkdir(parents=True, exist_ok=True)
-    filename = output_dir / f"{sha1((script.title + script.visual_prompt).encode('utf-8')).hexdigest()[:12]}_bg.png"
-    response = client.images.generate(
+    filename = output_dir / f"{sha1((script.title + script.image_prompt_en).encode('utf-8')).hexdigest()[:12]}_bg.png"
+    prompt = _build_image_prompt(script)
+    response = client.models.generate_images(
         model=image_model,
-        prompt=script.visual_prompt,
-        size="1024x1536",
-        quality="high",
+        prompt=prompt,
+        config=types.GenerateImagesConfig(
+            number_of_images=1,
+            aspect_ratio="9:16",
+            output_mime_type="image/png",
+            person_generation="dont_allow",
+            include_rai_reason=True,
+            include_safety_attributes=True,
+        ),
     )
-    image_data = response.data[0].b64_json if response.data else None
-    if not image_data:
+    generated = response.generated_images[0] if response.generated_images else None
+    image = generated.image if generated else None
+    if not image or not image.image_bytes:
         raise RuntimeError("배경 이미지 생성 결과가 비어 있습니다.")
-    filename.write_bytes(base64.b64decode(image_data))
+    filename.write_bytes(image.image_bytes)
     return filename
 
 
+def _build_image_prompt(script: VideoScript) -> str:
+    composition_variants = [
+        "empty foreground with atmospheric depth",
+        "still-life composition with architecture or nature as the subject",
+        "wide environmental scene with no central figure",
+        "quiet landscape or interior with generous negative space",
+        "subtle symbolic objects instead of a person",
+        "distant tiny silhouette only if absolutely needed, never a portrait",
+    ]
+    variant = composition_variants[
+        int(sha1((script.title + script.quote.quote_id).encode("utf-8")).hexdigest()[:2], 16) % len(composition_variants)
+    ]
+    return (
+        f"{script.image_prompt_en}. "
+        f"{variant}. "
+        f"Render this in {script.visual_style} style. "
+        "Background for a Korean quote short. "
+        "No recurring character, no anime character, no mascot, no centered face, no portrait, no close-up person. "
+        "No Seoul skyline, no N Seoul Tower, no Han River skyline, no repeated modern landmark. "
+        "Prefer scenery, objects, architecture, weather, light, paper texture, ink texture, or distant environment. "
+        "If a person appears, keep them tiny, turned away, and not identifiable. "
+        "Rotate between garden, study, window, alley, riverside, pavilion, mountain path, courtyard, desk, archive, and workshop motifs when they fit. "
+        "Keep the lower center clean for subtitles."
+    )
+
+
+def _build_image_prompt_en(visual_prompt_ko: str, visual_style: str, scene_hint: str) -> str:
+    style_map = {
+        "photoreal": "photorealistic cinematic image",
+        "watercolor": "soft watercolor illustration",
+        "ink": "East Asian ink wash painting",
+        "calligraphy": "East Asian calligraphy painting",
+    }
+    return (
+        f"{style_map.get(visual_style, 'background-focused image')}, "
+        f"{scene_hint}, inspired by this Korean brief: {visual_prompt_ko}. "
+        "Atmospheric background only, no central character, no portrait, clean subtitle-safe lower center."
+    )
+
+
+def _classify_creative_direction(
+    quote: QuoteEntry,
+    state: Dict[str, Any],
+    api_key: str,
+    text_model: str,
+    context: DailyContext,
+) -> CreativeDirection:
+    if not api_key:
+        visual_style = _choose_visual_style(quote, state, context)
+        scene_hint = _choose_scene_hint(quote, context)
+        return CreativeDirection(
+            theme=quote.mood,
+            emotion=quote.bgm_mood,
+            visual_style=visual_style,
+            scene_hint_ko=scene_hint,
+            scene_prompt_en=scene_hint,
+            bgm_mode=quote.bgm_mood,
+            bgm_prompt_en=f"inspirational instrumental background score, {quote.interpretation}, no heavy bass, no vocals",
+            avoid=["Seoul skyline", "repeated character", "heavy bass drone"],
+        )
+
+    client = OpenAI(api_key=api_key)
+    recent_styles = state.get("recent_visual_styles", [])[-4:]
+    recent_titles = state.get("recent_titles", [])[-6:]
+    fallback_style = _choose_visual_style(quote, state, context)
+    fallback_scene = _choose_scene_hint(quote, context)
+    prompt = f"""
+너는 쇼츠 제작을 위한 분류기다. 아래 명언에 대해 생성 트랙이 바로 사용할 JSON만 출력하라.
+
+오늘 정보:
+- 날짜: {context.date_iso}
+- 요일: {context.weekday_name_ko}
+- 계절: {context.season_ko}
+- 날씨: {context.weather_summary_ko}
+- 위치 참고: {context.location_name}
+
+명언 정보:
+- author: {quote.author}
+- source: {quote.source}
+- quote: {quote.quote}
+- interpretation: {quote.interpretation}
+- mood: {quote.mood}
+- visual_style default: {quote.visual_style}
+- bgm_mood default: {quote.bgm_mood}
+- context: {quote.context}
+
+최근 스타일:
+{json.dumps(recent_styles, ensure_ascii=False)}
+
+최근 제목:
+{json.dumps(recent_titles, ensure_ascii=False)}
+
+규칙:
+1. 이미지와 음악 생성에 모두 쓸 수 있는 결정값만 출력.
+2. 서울 랜드마크 반복 금지.
+3. 실사, 수채화, 수묵화, 서화 중 하나를 고르고 최근 스타일과 반복을 피할 것.
+4. scene_hint_ko는 한국어 한 문장, scene_prompt_en과 bgm_prompt_en은 자연스러운 영어 한 문단.
+5. avoid에는 반복을 막을 금지 요소 3~5개를 넣을 것.
+
+JSON 스키마:
+{{
+  "theme": "...",
+  "emotion": "...",
+  "visual_style": "{fallback_style}",
+  "scene_hint_ko": "{fallback_scene}",
+  "scene_prompt_en": "...",
+  "bgm_mode": "{quote.bgm_mood}",
+  "bgm_prompt_en": "...",
+  "avoid": ["...", "..."]
+}}
+"""
+    response = client.chat.completions.create(
+        model=text_model,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+    )
+    parsed = json.loads(response.choices[0].message.content or "{}")
+    return CreativeDirection(
+        theme=parsed.get("theme", quote.mood),
+        emotion=parsed.get("emotion", quote.bgm_mood),
+        visual_style=parsed.get("visual_style", fallback_style),
+        scene_hint_ko=parsed.get("scene_hint_ko", fallback_scene),
+        scene_prompt_en=parsed.get("scene_prompt_en", fallback_scene),
+        bgm_mode=parsed.get("bgm_mode", quote.bgm_mood),
+        bgm_prompt_en=parsed.get(
+            "bgm_prompt_en",
+            f"inspirational instrumental background score, {quote.interpretation}, no heavy bass, no vocals",
+        ),
+        avoid=parsed.get("avoid", ["Seoul skyline", "repeated character", "heavy bass drone"]),
+    )
+
+
 def _music_signature(script: VideoScript, context: DailyContext) -> str:
-    raw = f"{script.quote.author}|{script.quote.bgm_mood}|{context.date_iso}|{context.weather_summary_ko}"
+    raw = (
+        f"{script.quote.quote_id}|{script.title}|{script.quote.bgm_mood}|"
+        f"{script.visual_style}|{context.date_iso}|{context.weather_summary_ko}"
+    )
     return sha1(raw.encode("utf-8")).hexdigest()[:12]
 
 
@@ -204,3 +416,43 @@ def _append_unique(state: Dict[str, Any], key: str, value: str, limit: int) -> N
     items = [item for item in state.get(key, []) if item != value]
     items.append(value)
     state[key] = items[-limit:]
+
+
+def _choose_visual_style(quote: QuoteEntry, state: Dict[str, Any], context: DailyContext) -> str:
+    style_pools = {
+        "dawn": ["photoreal", "watercolor", "ink", "calligraphy"],
+        "rain": ["ink", "watercolor", "photoreal", "calligraphy"],
+        "city": ["photoreal", "watercolor", "ink", "calligraphy"],
+    }
+    pool = style_pools.get(quote.mood, ["photoreal", "watercolor", "ink", "calligraphy"])
+    recent_styles = state.get("recent_visual_styles", [])[-3:]
+    candidates = [style for style in pool if style not in recent_styles]
+    candidates = candidates or pool
+    seeded = random.Random(f"{quote.quote_id}|{context.date_iso}|{context.weather_summary_ko}|visual-style")
+    return seeded.choice(candidates)
+
+
+def _choose_scene_hint(quote: QuoteEntry, context: DailyContext) -> str:
+    scene_map = {
+        "dawn": [
+            "새벽 정원과 얇은 안개",
+            "햇살이 스미는 서재와 책상",
+            "조용한 강변 산책길",
+            "한지와 붓이 놓인 마루",
+        ],
+        "rain": [
+            "비 내리는 창가와 젖은 돌길",
+            "고요한 회랑과 빗물 고인 마당",
+            "안개 낀 산길과 젖은 대나무",
+            "조용한 작업실과 흐린 빛",
+        ],
+        "city": [
+            "정돈된 작업실과 창가 책상",
+            "고요한 회의실과 노트",
+            "이른 골목길과 긴 그림자",
+            "아침 공기의 아카이브 서가",
+        ],
+    }
+    pool = scene_map.get(quote.mood, scene_map[context.mood_hint if context.mood_hint in scene_map else "dawn"])
+    seeded = random.Random(f"{quote.quote_id}|{context.date_iso}|scene-hint")
+    return seeded.choice(pool)

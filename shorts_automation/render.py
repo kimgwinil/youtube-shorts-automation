@@ -77,9 +77,11 @@ def render_short(
                 "quote": script.quote.quote,
                 "interpretation": script.quote.interpretation,
                 "mood": script.quote.mood,
-                "visual_style": script.quote.visual_style,
+                "visual_style": script.visual_style,
                 "bgm_mood": script.quote.bgm_mood,
                 "visual_prompt": script.visual_prompt,
+                "image_prompt_en": script.image_prompt_en,
+                "bgm_prompt_en": script.bgm_prompt_en,
                 "background": str(background),
                 "bgm": str(bgm) if bgm else None,
                 "duration_seconds": script.total_duration,
@@ -104,7 +106,7 @@ def render_short(
 
 def _pick_background(background_dir: Path, script: VideoScript) -> Path:
     candidates = []
-    preferred_dir = background_dir / script.quote.mood / script.quote.visual_style
+    preferred_dir = background_dir / script.quote.mood / script.visual_style
     fallback_dir = background_dir / script.quote.mood
 
     for candidate_dir in [preferred_dir, fallback_dir]:

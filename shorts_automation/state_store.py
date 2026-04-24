@@ -10,7 +10,9 @@ DEFAULT_STATE: Dict[str, Any] = {
     "recent_titles": [],
     "recent_quote_ids": [],
     "recent_image_fingerprints": [],
+    "recent_visual_styles": [],
     "recent_music_signatures": [],
+    "recent_music_assets": [],
     "recent_dates": [],
 }
 

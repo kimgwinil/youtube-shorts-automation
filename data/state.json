@@ -19,7 +19,14 @@
     "8c5ad036a9407ed5d95bd656da2aeab68e7a4d13",
     "930cb2ee522fb24021eaae8015e6aba1cd8fde18",
     "98c1ebc98efd79ddd0b2a851bc82612ccfd185e6",
-    "28d59344521642a898142450d68d80115d340d4f"
+    "28d59344521642a898142450d68d80115d340d4f",
+    "8cc152b9a73fe0e7ba56065b8f7eb3e511d6a8ec",
+    "e8f3431806965624077ddba412d6083f7ad08f5a",
+    "c339f0f40a7c8b45a049e65df7fc1ef7469eca93",
+    "de863c32d05e42af6ae160ccdd2366e54bbc7f08",
+    "0503cc5d67d81ff4910d8882aeb1a42b1711a2c3",
+    "61c750a67b59ce71b1d81b80de5cfcecc8de302b",
+    "5c258b3e679190dcbc8dc8a5665148f9573a6277"
   ],
   "recent_titles": [
     "논쟁보다 한 걸음",
@@ -28,7 +35,12 @@
     "효율의 예술, 서울의 방향",
     "서울 한낮의 효율적 선택",
     "서울의 아침, 리더의 결정",
-    "서울의 아침, 사랑의 메아리"
+    "서울의 아침, 사랑의 메아리",
+    "강변의 새벽, 자유를 찾다",
+    "봄 강변, 조용한 아침",
+    "봄의 서재, 지혜의 빛",
+    "서재의 햇살과 지혜의 서",
+    "차분한 봄날, 마음의 여백"
   ],
   "recent_quote_ids": [
     "44fa08de533da4a94a2c60c852743a73fdd688ab",
@@ -37,7 +49,12 @@
     "8c5ad036a9407ed5d95bd656da2aeab68e7a4d13",
     "930cb2ee522fb24021eaae8015e6aba1cd8fde18",
     "98c1ebc98efd79ddd0b2a851bc82612ccfd185e6",
-    "28d59344521642a898142450d68d80115d340d4f"
+    "28d59344521642a898142450d68d80115d340d4f",
+    "0503cc5d67d81ff4910d8882aeb1a42b1711a2c3",
+    "a8d3280e673a76fd628c0ecbd378f82f80c85675",
+    "1f4da7b7074e0521a0e38b2250b0d1d221f59a45",
+    "61c750a67b59ce71b1d81b80de5cfcecc8de302b",
+    "5c258b3e679190dcbc8dc8a5665148f9573a6277"
   ],
   "recent_image_fingerprints": [
     "babeff96af074aed",
@@ -46,15 +63,32 @@
     "14c93b6d563b61ec",
     "f3d95bfb5ba9a9af",
     "c2c73e3e7e2cb580",
-    "143d060aefc49c81"
+    "143d060aefc49c81",
+    "3c8f2fab886f61ef",
+    "8f73be2470ff4b3d",
+    "29fc334c00e479ce",
+    "de430943cca30bf4",
+    "d04ca08764967fc6"
+  ],
+  "recent_visual_styles": [
+    "watercolor",
+    "photoreal",
+    "calligraphy",
+    "ink"
   ],
   "recent_music_signatures": [
     "54bb48558c5c",
     "92ce41220d7c",
     "ba65ff2626a6",
     "f9035e130cb8",
-    "1cb37bd7749c"
+    "1cb37bd7749c",
+    "fb86173942a0",
+    "b020821f021c",
+    "79be46f33cb1",
+    "4b5b24dbdf22",
+    "306e81838be6"
   ],
+  "recent_music_assets": [],
   "recent_dates": [
     "2026-04-22",
     "2026-04-23",

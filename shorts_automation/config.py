@@ -27,9 +27,9 @@ class AppConfig:
     location_longitude: float
     openai_api_key: str
     openai_text_model: str
-    openai_image_model: str
     enable_ai_generation: bool
     gemini_api_key: str
+    gemini_image_model: str
     gemini_music_model: str
     enable_gemini_music: bool
 
@@ -55,9 +55,9 @@ def load_config(project_root: Path) -> AppConfig:
         location_longitude=float(os.environ.get("LOCATION_LONGITUDE", "126.9780")),
         openai_api_key=os.environ.get("OPENAI_API_KEY", ""),
         openai_text_model=os.environ.get("OPENAI_TEXT_MODEL", "gpt-4o"),
-        openai_image_model=os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1"),
         enable_ai_generation=os.environ.get("ENABLE_AI_GENERATION", "true").lower() == "true",
         gemini_api_key=os.environ.get("GEMINI_API_KEY", ""),
+        gemini_image_model=os.environ.get("GEMINI_IMAGE_MODEL", "imagen-4.0-fast-generate-001"),
         gemini_music_model=os.environ.get("GEMINI_MUSIC_MODEL", "models/lyria-realtime-exp"),
         enable_gemini_music=os.environ.get("ENABLE_GEMINI_MUSIC", "true").lower() == "true",
     )

@@ -118,11 +118,17 @@ content/backgrounds/
 - 이미지: `.jpg`, `.jpeg`, `.png`
 - 영상: `.mp4`, `.mov`, `.m4v`
 
-렌더링 시 메타데이터 JSON에 `visual_prompt`도 함께 저장됩니다. 이 프롬프트를 이미지 생성 도구에 넣어 배경을 계속 보강하면 됩니다.
+렌더링 시 메타데이터 JSON에 `visual_prompt`도 함께 저장됩니다. AI 배경 생성 시에는 이 프롬프트를 바탕으로 `배경 중심`, `반복 캐릭터 금지`, `얼굴 클로즈업 금지` 제약을 추가로 적용합니다.
 
 ## 배경음악 파일
 
-기본 동작은 Gemini `Lyria RealTime`으로 그날 사용할 배경음악을 새로 생성하는 것입니다. Gemini 키가 없거나 생성이 실패하면 `content/music/<bgm_mood>`의 로컬 파일로 fallback 합니다.
+기본 동작은 Gemini `Lyria RealTime`으로 그날 사용할 배경음악을 새로 생성하는 것입니다.
+
+우선순위는 아래와 같습니다.
+
+1. Gemini 음악 생성 성공 시: 새 BGM 사용
+2. Gemini 실패 시: `content/music/<bgm_mood>` 라이브러리 음원 사용
+3. 라이브러리 음원도 없을 때만: 로컬 합성 fallback 사용
 
 ```text
 content/music/
@@ -143,6 +149,11 @@ fallback 자산 지원 확장자:
 Gemini 음악 생성은 Google 공식 문서 기준 `WebSocket 기반 Lyria RealTime`을 사용합니다.
 - 문서: https://ai.google.dev/gemini-api/docs/music-generation
 
+실행 로그에는 현재 어떤 경로가 선택되었는지 아래처럼 남습니다.
+
+- `[music] 라이브러리 음원 사용: ...`
+- `[music] 라이브러리 음원이 없어 로컬 합성 fallback 사용`
+
 ## 실행
 
 수동 실행:
@@ -162,7 +173,14 @@ python scripts/run_daily.py --dry-run
 실행 결과:
 
 - 생성 영상: `output/YYYYMMDD_HHMMSS_*.mp4`
+- 메타데이터: `output/YYYYMMDD_HHMMSS_*.json`
 - 상태 저장: `data/state.json`
+
+점검 포인트:
+
+- 메타데이터의 `bgm` 값이 `content/music/...` 또는 Gemini 생성 결과인지 확인
+- 메타데이터의 `visual_prompt`와 실제 배경이 인물 중심 캐릭터가 아니라 장면 중심인지 확인
+- 결과 영상에서 저역 위주 BGM 반복이 없는지 확인
 
 ## 자동 실행
 
