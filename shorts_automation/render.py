@@ -66,11 +66,21 @@ def render_short(
         output_path=author_overlay,
     )
 
+    title = (
+        script.title
+        if "#shorts" in script.title.lower()
+        else f"{script.title} #Shorts"
+    )
+    description_hashtags = (
+        shorts_hashtags
+        if "#shorts" in shorts_hashtags.lower()
+        else f"#Shorts {shorts_hashtags}"
+    )
     metadata_path.write_text(
         json.dumps(
             {
-                "title": script.title,
-                "description": f"{script.description}\n\n{shorts_hashtags}",
+                "title": title[:100],
+                "description": f"{script.description}\n\n{description_hashtags}",
                 "tags": script.tags,
                 "author": script.quote.author,
                 "source": script.quote.source,

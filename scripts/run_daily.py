@@ -20,6 +20,9 @@ def main() -> int:
     args = parser.parse_args()
     result = run_pipeline(PROJECT_ROOT, dry_run=args.dry_run, force=args.force)
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    if result.get("skipped"):
+        print(f"[SKIPPED] {result.get('reason', '')}", file=sys.stderr)
+        return 2
     return 0
 
 
