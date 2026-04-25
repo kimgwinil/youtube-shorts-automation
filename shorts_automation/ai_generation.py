@@ -48,12 +48,13 @@ def build_daily_package(
     state = load_state(state_file)
     quote = _choose_quote(quotes_file, state, context)
     direction = _classify_creative_direction(quote, state, openai_api_key, text_model, context)
-    script = _generate_unique_script(quote, direction, state, openai_api_key, text_model, context)
+    # 배경 이미지: GPT-4o 생성 프롬프트를 거치지 않고 scene_hint를 Imagen에 직접 전달
     background_path: Path | None = None
     try:
-        background_path = _generate_background_image(script, output_dir, gemini_api_key, image_model)
+        background_path = _generate_background_from_direction(direction, quote, output_dir, gemini_api_key, image_model)
     except Exception as exc:
         print(f"[image] Gemini/Imagen 배경 생성 실패, 로컬 fallback 사용: {exc}")
+    script = _generate_unique_script(quote, direction, state, openai_api_key, text_model, context)
     bgm_signature = _music_signature(script, context)
 
     _append_unique(state, "used_quotes", quote.quote_id, 120)
@@ -236,6 +237,55 @@ def _generate_script_with_ai(
         visual_style=parsed.get("visual_style", direction.visual_style),
         total_duration=float(parsed.get("total_duration", max(24.0, len(parsed["lines"]) * 3.8))),
     )
+
+
+def _generate_background_from_direction(
+    direction: CreativeDirection,
+    quote: QuoteEntry,
+    output_dir: Path,
+    api_key: str,
+    image_model: str,
+) -> Path:
+    if not api_key:
+        raise RuntimeError("Gemini API 키가 없어 배경 이미지를 생성할 수 없습니다.")
+    client = genai.Client(api_key=api_key)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    seed = sha1((direction.scene_prompt_en + direction.visual_style + quote.quote_id).encode("utf-8")).hexdigest()[:12]
+    filename = output_dir / f"{seed}_bg.png"
+    style_map = {
+        "photoreal": "photorealistic cinematic photography, ultra-detailed, natural lighting",
+        "watercolor": "soft watercolor illustration with delicate brushwork and paper texture",
+        "ink": "East Asian ink wash painting with expressive brushwork and generous empty space",
+        "calligraphy": "East Asian calligraphy painting style with elegant brushwork and serene empty space",
+    }
+    style_desc = style_map.get(direction.visual_style, style_map["photoreal"])
+    prompt = (
+        f"{style_desc}. {direction.scene_prompt_en}. "
+        "Vertical 9:16 composition for a Korean inspirational quote short. "
+        "Scene-focused, atmospheric, no city skyline, no Seoul landmarks, no recurring character, "
+        "no anime, no mascot, no portrait, no close-up face. "
+        "If a person appears, keep them tiny, distant, or shown from behind only. "
+        "Keep the lower center area clean and uncluttered for subtitle text overlay."
+    )
+    response = client.models.generate_images(
+        model=image_model,
+        prompt=prompt,
+        config=types.GenerateImagesConfig(
+            number_of_images=1,
+            aspect_ratio="9:16",
+            output_mime_type="image/png",
+            person_generation="dont_allow",
+            include_rai_reason=True,
+            include_safety_attributes=True,
+        ),
+    )
+    generated = response.generated_images[0] if response.generated_images else None
+    image = generated.image if generated else None
+    if not image or not image.image_bytes:
+        raise RuntimeError("배경 이미지 생성 결과가 비어 있습니다.")
+    filename.write_bytes(image.image_bytes)
+    print(f"[image] Gemini Imagen 배경 생성 완료: {filename.name} / scene: {direction.scene_hint_ko}")
+    return filename
 
 
 def _generate_background_image(
