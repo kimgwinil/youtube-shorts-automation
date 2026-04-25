@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 import random
+import time
 from zoneinfo import ZoneInfo
 
 from .ai_generation import build_daily_package
@@ -33,6 +34,7 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
         return {"skipped": True, "reason": f"이미 오늘({today}) 영상이 업로드되었습니다. --force로 강제 실행 가능."}
 
     if config.enable_ai_generation and config.openai_api_key:
+        variation_seed = str(int(time.time())) if force else ""
         package = build_daily_package(
             quotes_file=config.quotes_file,
             state_file=config.state_file,
@@ -42,6 +44,7 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
             image_model=config.gemini_image_model,
             gemini_api_key=config.gemini_api_key,
             context=context,
+            variation_seed=variation_seed,
         )
         script = package.script
         background_override = package.background_path

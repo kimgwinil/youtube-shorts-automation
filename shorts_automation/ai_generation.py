@@ -44,10 +44,11 @@ def build_daily_package(
     image_model: str,
     gemini_api_key: str,
     context: DailyContext,
+    variation_seed: str = "",
 ) -> DailyPackage:
     state = load_state(state_file)
-    quote = _choose_quote(quotes_file, state, context)
-    direction = _classify_creative_direction(quote, state, openai_api_key, text_model, context)
+    quote = _choose_quote(quotes_file, state, context, variation_seed=variation_seed)
+    direction = _classify_creative_direction(quote, state, openai_api_key, text_model, context, variation_seed=variation_seed)
     # 배경 이미지: GPT-4o 생성 프롬프트를 거치지 않고 scene_hint를 Imagen에 직접 전달
     background_path: Path | None = None
     try:
@@ -102,7 +103,7 @@ def _generate_unique_script(
     return script
 
 
-def _choose_quote(quotes_file: Path, state: Dict[str, Any], context: DailyContext) -> QuoteEntry:
+def _choose_quote(quotes_file: Path, state: Dict[str, Any], context: DailyContext, variation_seed: str = "") -> QuoteEntry:
     quotes = _load_quotes(quotes_file)
     recent_ids = set(state.get("recent_quote_ids", []))
     candidates = [quote for quote in quotes if quote.quote_id not in recent_ids]
@@ -111,7 +112,8 @@ def _choose_quote(quotes_file: Path, state: Dict[str, Any], context: DailyContex
 
     mood_matched = [quote for quote in candidates if quote.mood == context.mood_hint]
     pool = mood_matched or candidates
-    seeded = random.Random(f"{context.date_iso}|{context.weekday_name_ko}|{context.weather_summary_ko}")
+    seed_str = f"{context.date_iso}|{context.weekday_name_ko}|{context.weather_summary_ko}|{variation_seed}"
+    seeded = random.Random(seed_str)
     return seeded.choice(pool)
 
 
@@ -267,23 +269,36 @@ def _generate_background_from_direction(
         "If a person appears, keep them tiny, distant, or shown from behind only. "
         "Keep the lower center area clean and uncluttered for subtitle text overlay."
     )
-    response = client.models.generate_images(
-        model=image_model,
-        prompt=prompt,
-        config=types.GenerateImagesConfig(
-            number_of_images=1,
-            aspect_ratio="9:16",
-            output_mime_type="image/png",
-            person_generation="dont_allow",
-            include_rai_reason=True,
-            include_safety_attributes=True,
-        ),
-    )
-    generated = response.generated_images[0] if response.generated_images else None
-    image = generated.image if generated else None
-    if not image or not image.image_bytes:
-        raise RuntimeError("배경 이미지 생성 결과가 비어 있습니다.")
-    filename.write_bytes(image.image_bytes)
+    safe_prompts = [
+        prompt,
+        f"{style_desc}. {direction.scene_hint_ko}. Atmospheric background, no people, vertical 9:16 composition, clean lower center for text.",
+        f"{style_desc}. Abstract nature scene, {direction.visual_style} style, peaceful atmosphere, no figures, vertical format.",
+    ]
+    image_bytes: bytes | None = None
+    for attempt, attempt_prompt in enumerate(safe_prompts):
+        try:
+            response = client.models.generate_images(
+                model=image_model,
+                prompt=attempt_prompt,
+                config=types.GenerateImagesConfig(
+                    number_of_images=1,
+                    aspect_ratio="9:16",
+                    output_mime_type="image/png",
+                    person_generation="dont_allow",
+                ),
+            )
+            generated = response.generated_images[0] if response.generated_images else None
+            image = generated.image if generated else None
+            if image and image.image_bytes:
+                image_bytes = image.image_bytes
+                if attempt > 0:
+                    print(f"[image] Imagen 재시도 {attempt + 1}회 성공")
+                break
+        except Exception as exc:
+            print(f"[image] Imagen 시도 {attempt + 1} 실패: {exc}")
+    if not image_bytes:
+        raise RuntimeError("배경 이미지 생성 결과가 비어 있습니다. (3회 재시도 모두 실패)")
+    filename.write_bytes(image_bytes)
     print(f"[image] Gemini Imagen 배경 생성 완료: {filename.name} / scene: {direction.scene_hint_ko}")
     return filename
 
@@ -371,10 +386,11 @@ def _classify_creative_direction(
     api_key: str,
     text_model: str,
     context: DailyContext,
+    variation_seed: str = "",
 ) -> CreativeDirection:
     if not api_key:
-        visual_style = _choose_visual_style(quote, state, context)
-        scene_hint = _choose_scene_hint(quote, context)
+        visual_style = _choose_visual_style(quote, state, context, variation_seed=variation_seed)
+        scene_hint = _choose_scene_hint(quote, context, variation_seed=variation_seed)
         return CreativeDirection(
             theme=quote.mood,
             emotion=quote.bgm_mood,
@@ -389,8 +405,8 @@ def _classify_creative_direction(
     client = OpenAI(api_key=api_key)
     recent_styles = state.get("recent_visual_styles", [])[-4:]
     recent_titles = state.get("recent_titles", [])[-6:]
-    fallback_style = _choose_visual_style(quote, state, context)
-    fallback_scene = _choose_scene_hint(quote, context)
+    fallback_style = _choose_visual_style(quote, state, context, variation_seed=variation_seed)
+    fallback_scene = _choose_scene_hint(quote, context, variation_seed=variation_seed)
     prompt = f"""
 너는 쇼츠 제작을 위한 분류기다. 아래 명언에 대해 생성 트랙이 바로 사용할 JSON만 출력하라.
 
@@ -476,7 +492,7 @@ def _append_unique(state: Dict[str, Any], key: str, value: str, limit: int) -> N
     state[key] = items[-limit:]
 
 
-def _choose_visual_style(quote: QuoteEntry, state: Dict[str, Any], context: DailyContext) -> str:
+def _choose_visual_style(quote: QuoteEntry, state: Dict[str, Any], context: DailyContext, variation_seed: str = "") -> str:
     style_pools = {
         "dawn": ["photoreal", "watercolor", "ink", "calligraphy"],
         "rain": ["ink", "watercolor", "photoreal", "calligraphy"],
@@ -486,11 +502,11 @@ def _choose_visual_style(quote: QuoteEntry, state: Dict[str, Any], context: Dail
     recent_styles = state.get("recent_visual_styles", [])[-3:]
     candidates = [style for style in pool if style not in recent_styles]
     candidates = candidates or pool
-    seeded = random.Random(f"{quote.quote_id}|{context.date_iso}|{context.weather_summary_ko}|visual-style")
+    seeded = random.Random(f"{quote.quote_id}|{context.date_iso}|{context.weather_summary_ko}|visual-style|{variation_seed}")
     return seeded.choice(candidates)
 
 
-def _choose_scene_hint(quote: QuoteEntry, context: DailyContext) -> str:
+def _choose_scene_hint(quote: QuoteEntry, context: DailyContext, variation_seed: str = "") -> str:
     scene_map = {
         "dawn": [
             "새벽 정원과 얇은 안개",
@@ -535,5 +551,5 @@ def _choose_scene_hint(quote: QuoteEntry, context: DailyContext) -> str:
         ],
     }
     pool = scene_map.get(quote.mood, scene_map[context.mood_hint if context.mood_hint in scene_map else "dawn"])
-    seeded = random.Random(f"{quote.quote_id}|{context.date_iso}|scene-hint")
+    seeded = random.Random(f"{quote.quote_id}|{context.date_iso}|scene-hint|{variation_seed}")
     return seeded.choice(pool)
