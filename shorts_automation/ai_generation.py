@@ -133,10 +133,9 @@ def _generate_script_with_ai(
 
 오늘 정보:
 - 날짜: {context.date_iso}
-- 지역: {context.location_name}
 - 요일: {context.weekday_name_ko}
 - 계절: {context.season_ko}
-- 날씨: {context.weather_summary_ko}
+- 날씨 공기감: {context.weather_summary_ko}
 - 추천 분위기: {context.mood_hint}
 
 고정 명언 정보:
@@ -184,8 +183,12 @@ def _generate_script_with_ai(
 11. 얼굴 클로즈업, 반복 가능한 동일 캐릭터, 애니풍 주인공, 마스코트형 인물은 금지한다.
 12. 사람이 필요하면 작고 익명적인 실루엣 또는 뒷모습 한 명 이하만 허용한다.
 13. 소품, 건축, 자연, 빛, 날씨 묘사를 우선하고 장면의 주인공은 분위기여야 한다.
-14. 서울의 랜드마크, 서울 스카이라인, 서울 도심 전경을 매번 반복하지 말 것.
-15. location 정보는 공기감 참고용이며, 장면은 정원, 서재, 창가, 골목, 산길, 마루, 강변, 작업실, 회의실 등으로 넓게 변주할 것.
+14. 특정 도시의 랜드마크·스카이라인·도심 전경을 반복하지 말 것. 제목에 도시명을 넣지 말 것.
+15. 장면은 아래 중 명언 분위기에 맞는 것을 골라 매번 다르게 변주할 것:
+    동양: 산사 처마, 대나무 숲 오솔길, 고요한 연못, 한지 마루, 먹물 서재, 돌담 골목, 강변 정자
+    자연: 안개 낀 산릉, 이슬 맺힌 풀밭, 폭우 뒤 하늘, 설원 침엽수, 사막 능선의 빛, 해안 절벽
+    실내: 오래된 유럽 도서관, 스칸디나비아 미니멀 작업실, 빈티지 서재, 캔들 켜진 다락방, 박물관 복도
+    도시: 이른 새벽 골목, 기차역 플랫폼, 빗속의 카페 창가, 공원 벤치, 지하철 창문
 16. visual_style은 반드시 `{direction.visual_style}`로 유지할 것.
 17. image_prompt_en은 자연스러운 영어 한 문단으로 작성하고, 이미지 생성 모델에 직접 넣을 수 있어야 한다.
 18. bgm_prompt_en은 자연스러운 영어 한 문단으로 작성하고, 음악 생성 모델에 직접 넣을 수 있어야 한다.
@@ -288,7 +291,12 @@ def _build_image_prompt(script: VideoScript) -> str:
         "No Seoul skyline, no N Seoul Tower, no Han River skyline, no repeated modern landmark. "
         "Prefer scenery, objects, architecture, weather, light, paper texture, ink texture, or distant environment. "
         "If a person appears, keep them tiny, turned away, and not identifiable. "
-        "Rotate between garden, study, window, alley, riverside, pavilion, mountain path, courtyard, desk, archive, and workshop motifs when they fit. "
+        "Rotate freely between these motifs based on the quote mood: "
+        "East Asian (garden, bamboo forest, temple eaves, ink study, stone path, river pavilion, morning maru), "
+        "Nature (misty mountain ridge, dewy meadow, desert dune at dawn, snowy pine forest, sea cliff at dusk, autumn forest rain), "
+        "Interior (Victorian library, Scandinavian minimal studio, candlelit attic, museum corridor, old cafe counter, reading room), "
+        "Urban (dawn alley with long shadows, train platform, rainy cafe window, park bench in mist). "
+        "Do NOT default to a Korean city skyline. Pick the motif that best fits the quote. "
         "Keep the lower center clean for subtitles."
     )
 
@@ -340,8 +348,7 @@ def _classify_creative_direction(
 - 날짜: {context.date_iso}
 - 요일: {context.weekday_name_ko}
 - 계절: {context.season_ko}
-- 날씨: {context.weather_summary_ko}
-- 위치 참고: {context.location_name}
+- 날씨 공기감: {context.weather_summary_ko}
 
 명언 정보:
 - author: {quote.author}
@@ -361,10 +368,11 @@ def _classify_creative_direction(
 
 규칙:
 1. 이미지와 음악 생성에 모두 쓸 수 있는 결정값만 출력.
-2. 서울 랜드마크 반복 금지.
+2. 특정 도시 랜드마크·스카이라인·도시명을 scene에 넣지 말 것.
 3. 실사, 수채화, 수묵화, 서화 중 하나를 고르고 최근 스타일과 반복을 피할 것.
 4. scene_hint_ko는 한국어 한 문장, scene_prompt_en과 bgm_prompt_en은 자연스러운 영어 한 문단.
 5. avoid에는 반복을 막을 금지 요소 3~5개를 넣을 것.
+6. 장면은 동양 전통 공간, 자연 풍경, 유럽 인테리어, 미니멀 공간 등을 명언 분위기에 맞게 다양하게 선택할 것.
 
 JSON 스키마:
 {{
@@ -439,18 +447,41 @@ def _choose_scene_hint(quote: QuoteEntry, context: DailyContext) -> str:
             "햇살이 스미는 서재와 책상",
             "조용한 강변 산책길",
             "한지와 붓이 놓인 마루",
+            "안개 속 산사(山寺)의 처마와 이끼 낀 돌계단",
+            "이슬 맺힌 대나무 숲 오솔길",
+            "오래된 유럽 도서관의 새벽 빛과 먼지 입자",
+            "설원 침엽수 숲의 첫 햇살",
+            "사막 능선 위 새벽 하늘과 모래 물결",
+            "연못가 정자와 수면에 비친 새벽빛",
+            "스칸디나비아 통나무집 창가와 초원",
+            "고요한 수도원 회랑과 촛불 그림자",
         ],
         "rain": [
             "비 내리는 창가와 젖은 돌길",
             "고요한 회랑과 빗물 고인 마당",
             "안개 낀 산길과 젖은 대나무",
             "조용한 작업실과 흐린 빛",
+            "빗물 맺힌 기차 창문과 흐릿한 풍경",
+            "지중해 골목의 비 내리는 오후와 빨래줄",
+            "가을 낙엽 위로 내리는 빗속의 공원 벤치",
+            "먹물이 번지는 한지와 빗소리",
+            "젖은 돌담과 이끼, 흐린 산길",
+            "빗속 카페 창가와 김이 오르는 찻잔",
+            "폭우 뒤 잦아드는 하늘과 먼 산 능선",
         ],
         "city": [
             "정돈된 작업실과 창가 책상",
             "고요한 회의실과 노트",
-            "이른 골목길과 긴 그림자",
-            "아침 공기의 아카이브 서가",
+            "이른 새벽 골목과 긴 그림자",
+            "빈티지 아카이브 서가와 양피지 문서",
+            "런던 빅토리아풍 도서관과 나무 계단",
+            "스칸디나비아 미니멀 오피스와 흰 벽",
+            "다락방 작업실과 비스듬히 드는 아침 빛",
+            "새벽 기차역 플랫폼과 텅 빈 레일",
+            "파리 아파르트망 창가의 이른 아침 커피",
+            "박물관 복도와 오래된 액자들",
+            "오래된 카페 카운터와 스팀 커피 머신",
+            "열람실 창가와 쌓인 책들",
         ],
     }
     pool = scene_map.get(quote.mood, scene_map[context.mood_hint if context.mood_hint in scene_map else "dawn"])
