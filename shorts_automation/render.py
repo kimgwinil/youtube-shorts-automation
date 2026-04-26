@@ -241,7 +241,7 @@ def _filter_graph(num_line_overlays: int, has_bgm: bool, duration: float) -> Tup
             "equalizer=f=120:t=q:w=1.5:g=-16,equalizer=f=200:t=q:w=2:g=-12,"
             f"volume=0.32,"
             f"afade=t=in:st=0:d=1.5,afade=t=out:st={max(duration - 2.0, 0):.2f}:d=2,"
-            "dynaudnorm=f=150:g=1.5,alimiter=limit=0.85[aout]"
+            "dynaudnorm=f=500:g=3,alimiter=limit=0.85[aout]"
         )
         audio_map = "[aout]"
 

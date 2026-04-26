@@ -202,7 +202,7 @@ def _library_filter_profile(script: VideoScript, signature: str) -> str:
     fade = (
         f"afade=t=in:st=0:d=1.5,"
         f"afade=t=out:st={max(script.total_duration - 2.0, 0):.2f}:d=2.0,"
-        "dynaudnorm=f=150:g=1.5,alimiter=limit=0.84"
+        "dynaudnorm=f=500:g=3,alimiter=limit=0.84"
     )
     return f"{profile},{fade}"
 
@@ -322,7 +322,7 @@ def _transcode_pcm_to_m4a(raw_path: Path, output_path: Path, duration: float) ->
             "highpass=f=380,lowpass=f=5400,"
             "equalizer=f=120:t=q:w=1.5:g=-18,"
             "equalizer=f=200:t=q:w=2:g=-14,"
-            "dynaudnorm=f=150:g=1.5,alimiter=limit=0.84,"
+            "dynaudnorm=f=500:g=3,alimiter=limit=0.84,"
             f"afade=t=in:st=0:d=1.8,afade=t=out:st={max(duration - 2.0, 0):.2f}:d=2.0"
         ),
         "-t",
