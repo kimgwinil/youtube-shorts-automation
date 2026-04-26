@@ -25,9 +25,9 @@ _GEMINI_MOOD_PROFILES: dict = {
         "guidance": 4.5,
         "mute_drums": True,
         "prompts": [
-            ("instrumental ambient soundtrack", 1.2),
-            ("soft piano, airy pads, warm shimmer, no vocals", 1.0),
-            ("calm sunrise, contemplative, minimal motion, no bass rumble", 0.8),
+            ("ambient instrumental meditation, no bass, no sub-frequencies, no low drone", 1.2),
+            ("soft piano, airy atmospheric pads, crystalline shimmer, upper harmonics only, no vocals", 1.0),
+            ("zen garden, dawn silence, sparse and spacious, pure midrange, no bass rumble", 0.8),
         ],
     },
     "reflective": {
@@ -36,9 +36,9 @@ _GEMINI_MOOD_PROFILES: dict = {
         "guidance": 4.3,
         "mute_drums": True,
         "prompts": [
-            ("instrumental cinematic ambient", 1.2),
-            ("gentle felt piano, light strings, rain mood, no vocals", 1.0),
-            ("reflective, restrained, no bass rumble, no harsh hits", 0.8),
+            ("cinematic ambient instrumental, completely bass-free, clean midrange, no percussion", 1.2),
+            ("felt piano, gentle cello harmonics, misty strings, subtle rain texture, no vocals", 1.0),
+            ("introspective evening, candlelight atmosphere, restrained tone, no bass drone, no rumble", 0.8),
         ],
     },
     "focused": {
@@ -47,9 +47,9 @@ _GEMINI_MOOD_PROFILES: dict = {
         "guidance": 4.0,
         "mute_drums": False,
         "prompts": [
-            ("instrumental modern ambient", 1.2),
-            ("clean piano pulses, subtle marimba, light rhythmic texture, no vocals", 1.0),
-            ("focused morning energy, disciplined, crisp, no bass rumble", 0.7),
+            ("modern ambient instrumental, minimal bass, clean forward motion, bright spectrum", 1.2),
+            ("clean piano pulse, glass marimba, light rhythmic texture, bright upper tone, no vocals", 1.0),
+            ("morning clarity, disciplined momentum, crisp upper frequencies, no bass rumble", 0.7),
         ],
     },
 }
@@ -182,19 +182,19 @@ def _library_filter_profile(script: VideoScript, signature: str) -> str:
     style_seed = int(sha1(f"{signature}|{script.visual_style}|{script.quote.quote_id}".encode("utf-8")).hexdigest()[:8], 16)
     variants = {
         "meditative": [
-            "highpass=f=180,lowpass=f=5400,equalizer=f=260:t=q:w=1.1:g=-4,aecho=0.7:0.35:180|360:0.08|0.04,volume=0.92",
-            "highpass=f=210,lowpass=f=5000,atempo=0.97,equalizer=f=2400:t=q:w=1.0:g=1.8,stereotools=softclip=0,volume=0.90",
-            "highpass=f=190,lowpass=f=5600,chorus=0.5:0.9:20|30:0.10|0.08:0.25|0.20:0.4|0.3,volume=0.88",
+            "highpass=f=340,lowpass=f=5400,equalizer=f=200:t=q:w=1.5:g=-10,equalizer=f=260:t=q:w=1.1:g=-6,aecho=0.7:0.35:180|360:0.08|0.04,volume=0.92",
+            "highpass=f=360,lowpass=f=5000,atempo=0.97,equalizer=f=180:t=q:w=1.3:g=-12,equalizer=f=2400:t=q:w=1.0:g=1.8,volume=0.90",
+            "highpass=f=350,lowpass=f=5600,equalizer=f=200:t=q:w=1.4:g=-10,chorus=0.5:0.9:20|30:0.10|0.08:0.25|0.20:0.4|0.3,volume=0.88",
         ],
         "reflective": [
-            "highpass=f=190,lowpass=f=5200,equalizer=f=280:t=q:w=1.2:g=-5,equalizer=f=2200:t=q:w=1.0:g=2.0,aecho=0.68:0.4:240|480:0.10|0.05,volume=0.93",
-            "highpass=f=200,lowpass=f=5600,atempo=0.99,equalizer=f=3000:t=q:w=0.9:g=2.5,stereotools=balance_out=-0.02,volume=0.91",
-            "highpass=f=220,lowpass=f=5000,extrastereo=m=1.8,crossfeed=strength=0.15,equalizer=f=250:t=q:w=1.1:g=-4.5,volume=0.89",
+            "highpass=f=350,lowpass=f=5200,equalizer=f=200:t=q:w=1.5:g=-10,equalizer=f=260:t=q:w=1.2:g=-7,equalizer=f=2200:t=q:w=1.0:g=2.0,aecho=0.68:0.4:240|480:0.10|0.05,volume=0.93",
+            "highpass=f=370,lowpass=f=5600,atempo=0.99,equalizer=f=180:t=q:w=1.3:g=-12,equalizer=f=3000:t=q:w=0.9:g=2.5,volume=0.91",
+            "highpass=f=380,lowpass=f=5000,equalizer=f=200:t=q:w=1.5:g=-10,extrastereo=m=1.8,equalizer=f=250:t=q:w=1.1:g=-6,volume=0.89",
         ],
         "focused": [
-            "highpass=f=220,lowpass=f=6200,atempo=1.02,equalizer=f=240:t=q:w=1.0:g=-4,equalizer=f=3200:t=q:w=0.8:g=2.2,volume=0.94",
-            "highpass=f=240,lowpass=f=6500,atempo=1.01,extrastereo=m=1.4,equalizer=f=2800:t=q:w=1.1:g=2.0,volume=0.92",
-            "highpass=f=200,lowpass=f=6000,chorus=0.4:0.8:18|24:0.08|0.06:0.20|0.18:0.3|0.25,equalizer=f=260:t=q:w=1.0:g=-3.5,volume=0.90",
+            "highpass=f=370,lowpass=f=6200,atempo=1.02,equalizer=f=200:t=q:w=1.4:g=-9,equalizer=f=240:t=q:w=1.0:g=-5,equalizer=f=3200:t=q:w=0.8:g=2.2,volume=0.94",
+            "highpass=f=390,lowpass=f=6500,atempo=1.01,equalizer=f=180:t=q:w=1.3:g=-11,extrastereo=m=1.4,equalizer=f=2800:t=q:w=1.1:g=2.0,volume=0.92",
+            "highpass=f=360,lowpass=f=6000,equalizer=f=200:t=q:w=1.4:g=-9,chorus=0.4:0.8:18|24:0.08|0.06:0.20|0.18:0.3|0.25,equalizer=f=260:t=q:w=1.0:g=-5,volume=0.90",
         ],
     }
     base_profile = variants.get(script.quote.bgm_mood, variants["meditative"])
@@ -202,7 +202,7 @@ def _library_filter_profile(script: VideoScript, signature: str) -> str:
     fade = (
         f"afade=t=in:st=0:d=1.5,"
         f"afade=t=out:st={max(script.total_duration - 2.0, 0):.2f}:d=2.0,"
-        "dynaudnorm=f=90:g=3,alimiter=limit=0.84"
+        "dynaudnorm=f=150:g=1.5,alimiter=limit=0.84"
     )
     return f"{profile},{fade}"
 
@@ -280,24 +280,29 @@ async def _generate_music_with_gemini(
 
 def _build_gemini_prompts(script: VideoScript, base_prompts: list[tuple[str, float]]) -> list[tuple[str, float]]:
     prompts = list(base_prompts)
-    prompts.append((f"{script.quote.mood} mood, {script.visual_style} visual atmosphere", 0.45))
-    prompts.append((f"inspired by: {script.quote.interpretation}", 0.45))
-    prompts.append((f"theme: {script.quote.context}", 0.35))
-    prompts.append((script.bgm_prompt_en, 0.75))
-    prompts.append((_quote_music_direction(script), 0.35))
-    prompts.append(("background score for a short inspirational video, varied arrangement, no repeated bass drone", 0.55))
+    prompts.append((f"{script.quote.mood} mood, {script.visual_style} visual atmosphere", 0.55))
+    prompts.append((f"inspired by: {script.quote.interpretation}", 0.50))
+    prompts.append((f"theme: {script.quote.context}", 0.40))
+    prompts.append((script.bgm_prompt_en, 1.1))
+    prompts.append((_quote_music_direction(script), 0.60))
+    prompts.append(("no sub-bass, no low frequency drone, no bass rumble, clean high-mid spectrum only", 0.80))
+    prompts.append(("background score for short inspirational video, varied melodic arrangement, airy and clear", 0.55))
     return prompts
 
 
 def _quote_music_direction(script: VideoScript) -> str:
     text = f"{script.quote.quote} {script.quote.interpretation} {script.quote.context}".lower()
-    if any(keyword in text for keyword in ["행동", "실천", "실행", "관리", "측정", "혁신", "리더십"]):
-        return "gentle forward motion, clear pulse, disciplined piano or marimba, light rhythmic lift"
-    if any(keyword in text for keyword in ["반성", "근심", "비", "흔들", "부끄러움", "사랑", "적자의 마음"]):
-        return "reflective texture, soft piano, restrained strings, subtle rain-like ambience, emotional but controlled"
-    if any(keyword in text for keyword in ["배움", "새벽", "지혜", "여백", "마루", "정원", "대나무"]):
-        return "quiet meditative space, airy pads, warm resonance, minimal low end, contemplative pacing"
-    return "balanced inspirational ambient, warm midrange, light melodic contour, no heavy bass"
+    if any(keyword in text for keyword in ["행동", "실천", "실행", "관리", "측정", "혁신", "리더십", "성과", "목표", "전략", "경영"]):
+        return "gentle forward motion, clear melodic pulse, disciplined piano or marimba, light rhythmic lift, no bass"
+    if any(keyword in text for keyword in ["반성", "근심", "비", "흔들", "부끄러움", "사랑", "적자의 마음", "외로움", "슬픔", "그리움"]):
+        return "reflective texture, soft felt piano, restrained strings, subtle rain-like ambience, emotional but controlled, no bass drone"
+    if any(keyword in text for keyword in ["배움", "새벽", "지혜", "여백", "마루", "정원", "대나무", "자연", "산", "바람", "하늘", "고요"]):
+        return "quiet meditative space, airy atmospheric pads, warm resonance, minimal low end, contemplative pacing, zen stillness"
+    if any(keyword in text for keyword in ["용기", "도전", "희망", "의지", "극복", "성장", "변화", "열정"]):
+        return "uplifting ambient texture, bright melodic arpeggios, gentle piano, light strings, hopeful tone, no bass rumble"
+    if any(keyword in text for keyword in ["시간", "인생", "삶", "죽음", "운명", "철학", "존재", "의미"]):
+        return "cinematic ambient, sparse piano, distant reverb, contemplative depth, no heavy bass, timeless atmosphere"
+    return "balanced inspirational ambient, warm midrange clarity, light melodic contour, no heavy bass, no low frequency drone"
 
 
 def _transcode_pcm_to_m4a(raw_path: Path, output_path: Path, duration: float) -> None:
@@ -314,8 +319,10 @@ def _transcode_pcm_to_m4a(raw_path: Path, output_path: Path, duration: float) ->
         str(raw_path),
         "-af",
         (
-            "highpass=f=260,lowpass=f=5600,"
-            "dynaudnorm=f=100:g=3,alimiter=limit=0.84,"
+            "highpass=f=380,lowpass=f=5400,"
+            "equalizer=f=120:t=q:w=1.5:g=-18,"
+            "equalizer=f=200:t=q:w=2:g=-14,"
+            "dynaudnorm=f=150:g=1.5,alimiter=limit=0.84,"
             f"afade=t=in:st=0:d=1.8,afade=t=out:st={max(duration - 2.0, 0):.2f}:d=2.0"
         ),
         "-t",
