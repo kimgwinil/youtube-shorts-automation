@@ -19,7 +19,6 @@
     "28d59344521642a898142450d68d80115d340d4f",
     "8cc152b9a73fe0e7ba56065b8f7eb3e511d6a8ec",
     "e8f3431806965624077ddba412d6083f7ad08f5a",
-    "c339f0f40a7c8b45a049e65df7fc1ef7469eca93",
     "de863c32d05e42af6ae160ccdd2366e54bbc7f08",
     "0503cc5d67d81ff4910d8882aeb1a42b1711a2c3",
     "61c750a67b59ce71b1d81b80de5cfcecc8de302b",
@@ -32,10 +31,10 @@
     "6297e1290da7926c4568a898da2116c84083ddf2",
     "6d3fb5c2735998e9bbc33d4091a9490c2bce629e",
     "c48f31df757f189b55bec88b5af903da6ae2cc29",
-    "29ddfc87e563b4b49ca269e94c69fd26e15f2720"
+    "29ddfc87e563b4b49ca269e94c69fd26e15f2720",
+    "c339f0f40a7c8b45a049e65df7fc1ef7469eca93"
   ],
   "recent_titles": [
-    "도시 아침, 숫자로 시작",
     "서울의 봄날, 마음의 소리",
     "효율의 예술, 서울의 방향",
     "서울 한낮의 효율적 선택",
@@ -54,10 +53,10 @@
     "봄의 창을 여는 아침",
     "혁신의 묘약, 포근한 카페에서",
     "봄날의 도서관, 내면의 반영",
-    "새벽, 기회의 문을 열다"
+    "새벽, 기회의 문을 열다",
+    "새벽의 플랫폼, 미래를 꿈꾸다"
   ],
   "recent_quote_ids": [
-    "742d9b5facb691aa9b560853aa30a44abbce10e5",
     "8c8769f32739dc1a1270cc860a5ce31731198bec",
     "8c5ad036a9407ed5d95bd656da2aeab68e7a4d13",
     "930cb2ee522fb24021eaae8015e6aba1cd8fde18",
@@ -76,10 +75,10 @@
     "6297e1290da7926c4568a898da2116c84083ddf2",
     "6d3fb5c2735998e9bbc33d4091a9490c2bce629e",
     "c48f31df757f189b55bec88b5af903da6ae2cc29",
-    "29ddfc87e563b4b49ca269e94c69fd26e15f2720"
+    "29ddfc87e563b4b49ca269e94c69fd26e15f2720",
+    "c339f0f40a7c8b45a049e65df7fc1ef7469eca93"
   ],
   "recent_image_fingerprints": [
-    "01c18fe537fb0973",
     "781917397f3c65f9",
     "14c93b6d563b61ec",
     "f3d95bfb5ba9a9af",
@@ -98,13 +97,14 @@
     "ef5ae4808e802352",
     "6043e2ec063d70fe",
     "6b03e78cac9f3aeb",
-    "a08ac9c594145791"
+    "a08ac9c594145791",
+    "861516aaa63fb05c"
   ],
   "recent_visual_styles": [
     "photoreal",
     "calligraphy",
-    "ink",
-    "watercolor"
+    "watercolor",
+    "ink"
   ],
   "recent_music_signatures": [
     "54bb48558c5c",
@@ -125,7 +125,8 @@
     "c2c0e00b8182",
     "2d2497d9c5c5",
     "15144a5602ea",
-    "2e4c5496c976"
+    "2e4c5496c976",
+    "6383396ddd2a"
   ],
   "recent_music_assets": [],
   "recent_dates": [
@@ -133,6 +134,7 @@
     "2026-04-23",
     "2026-04-24",
     "2026-04-25",
-    "2026-04-26"
+    "2026-04-26",
+    "2026-04-27"
   ]
 }
