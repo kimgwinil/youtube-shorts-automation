@@ -52,7 +52,9 @@ def build_daily_package(
     # 배경 이미지: GPT-4o 생성 프롬프트를 거치지 않고 scene_hint를 Imagen에 직접 전달
     background_path: Path | None = None
     try:
-        background_path = _generate_background_from_direction(direction, quote, output_dir, gemini_api_key, image_model)
+        background_path = _generate_background_from_direction(
+            direction, quote, output_dir, gemini_api_key, image_model, variation_seed=variation_seed
+        )
     except Exception as exc:
         print(f"[image] Gemini/Imagen 배경 생성 실패, 로컬 fallback 사용: {exc}")
     script = _generate_unique_script(quote, direction, state, openai_api_key, text_model, context)
@@ -241,40 +243,60 @@ def _generate_script_with_ai(
     )
 
 
+_STYLE_DESC: dict[str, str] = {
+    "photoreal": "photorealistic cinematic photography, ultra-detailed, natural lighting",
+    "watercolor": "soft watercolor illustration with delicate brushwork and paper texture",
+    "ink": "East Asian ink wash painting with expressive brushwork and generous empty space",
+    "calligraphy": "East Asian calligraphy painting style with elegant brushwork and serene empty space",
+}
+
+_THEME_SCENE_FALLBACK: dict[str, str] = {
+    "dawn": "misty mountain temple path at dawn, stone steps covered in morning dew, soft golden light filtering through pine branches",
+    "rain": "old wooden pavilion beside a still pond in gentle rain, ripples on the water surface, foggy distant hills",
+    "city": "quiet candlelit reading room with tall bookshelves, warm amber light, leather-bound books, a wooden writing desk",
+}
+
+
 def _generate_background_from_direction(
     direction: CreativeDirection,
     quote: QuoteEntry,
     output_dir: Path,
     api_key: str,
     image_model: str,
+    variation_seed: str = "",
 ) -> Path:
     if not api_key:
         raise RuntimeError("Gemini API 키가 없어 배경 이미지를 생성할 수 없습니다.")
     client = genai.Client(api_key=api_key)
     output_dir.mkdir(parents=True, exist_ok=True)
-    seed = sha1((direction.scene_prompt_en + direction.visual_style + quote.quote_id).encode("utf-8")).hexdigest()[:12]
+
+    seed = sha1(
+        (direction.scene_prompt_en + direction.visual_style + quote.quote_id + variation_seed).encode("utf-8")
+    ).hexdigest()[:12]
     filename = output_dir / f"{seed}_bg.png"
-    style_map = {
-        "photoreal": "photorealistic cinematic photography, ultra-detailed, natural lighting",
-        "watercolor": "soft watercolor illustration with delicate brushwork and paper texture",
-        "ink": "East Asian ink wash painting with expressive brushwork and generous empty space",
-        "calligraphy": "East Asian calligraphy painting style with elegant brushwork and serene empty space",
-    }
-    style_desc = style_map.get(direction.visual_style, style_map["photoreal"])
-    prompt = (
-        f"{style_desc}. {direction.scene_prompt_en}. "
-        "Vertical 9:16 composition for a Korean inspirational quote short. "
-        "Scene-focused, atmospheric, no city skyline, no Seoul landmarks, no recurring character, "
-        "no anime, no mascot, no portrait, no close-up face. "
+
+    style_desc = _STYLE_DESC.get(direction.visual_style, _STYLE_DESC["photoreal"])
+    theme_fallback = _THEME_SCENE_FALLBACK.get(direction.theme, _THEME_SCENE_FALLBACK["dawn"])
+
+    base_suffix = (
+        "Vertical 9:16 composition for a Korean inspirational short. "
+        "Scene-focused, atmospheric, no city skyline, no Seoul landmarks, "
+        "no recurring character, no anime, no mascot, no portrait, no close-up face. "
         "If a person appears, keep them tiny, distant, or shown from behind only. "
-        "Keep the lower center area clean and uncluttered for subtitle text overlay."
+        "Keep the lower center area uncluttered for subtitle text overlay."
     )
+
     safe_prompts = [
-        prompt,
-        f"{style_desc}. {direction.scene_hint_ko}. Atmospheric background, no people, vertical 9:16 composition, clean lower center for text.",
-        f"{style_desc}. Abstract nature scene, {direction.visual_style} style, peaceful atmosphere, no figures, vertical format.",
+        # 1차: 풀 프롬프트 (scene_prompt_en 사용)
+        f"{style_desc}. {direction.scene_prompt_en}. {base_suffix}",
+        # 2차: scene_prompt_en 앞부분만 사용한 간소화 버전 (영어 유지)
+        f"{style_desc}. {direction.scene_prompt_en[:200].rstrip()}. Atmospheric background, no people, no text, vertical 9:16, clean lower center.",
+        # 3차: 테마 기반 범용 영어 fallback (한국어 완전 제거)
+        f"{style_desc}. {theme_fallback}. Peaceful atmosphere, no figures, no text, vertical 9:16 format.",
     ]
+
     image_bytes: bytes | None = None
+    used_attempt = 0
     for attempt, attempt_prompt in enumerate(safe_prompts):
         try:
             response = client.models.generate_images(
@@ -291,15 +313,17 @@ def _generate_background_from_direction(
             image = generated.image if generated else None
             if image and image.image_bytes:
                 image_bytes = image.image_bytes
-                if attempt > 0:
-                    print(f"[image] Imagen 재시도 {attempt + 1}회 성공")
+                used_attempt = attempt + 1
                 break
         except Exception as exc:
             print(f"[image] Imagen 시도 {attempt + 1} 실패: {exc}")
+
     if not image_bytes:
         raise RuntimeError("배경 이미지 생성 결과가 비어 있습니다. (3회 재시도 모두 실패)")
+
     filename.write_bytes(image_bytes)
-    print(f"[image] Gemini Imagen 배경 생성 완료: {filename.name} / scene: {direction.scene_hint_ko}")
+    retry_note = f" (재시도 {used_attempt}회)" if used_attempt > 1 else ""
+    print(f"[image] Gemini Imagen 배경 생성 완료{retry_note}: {filename.name} / scene: {direction.scene_hint_ko}")
     return filename
 
 
@@ -436,9 +460,11 @@ def _classify_creative_direction(
 1. 이미지와 음악 생성에 모두 쓸 수 있는 결정값만 출력.
 2. 특정 도시 랜드마크·스카이라인·도시명을 scene에 넣지 말 것.
 3. 실사, 수채화, 수묵화, 서화 중 하나를 고르고 최근 스타일과 반복을 피할 것.
-4. scene_hint_ko는 한국어 한 문장, scene_prompt_en과 bgm_prompt_en은 자연스러운 영어 한 문단.
-5. avoid에는 반복을 막을 금지 요소 3~5개를 넣을 것.
-6. 장면은 동양 전통 공간, 자연 풍경, 유럽 인테리어, 미니멀 공간 등을 명언 분위기에 맞게 다양하게 선택할 것.
+4. scene_hint_ko는 한국어 한 문장, scene_prompt_en과 bgm_prompt_en은 반드시 영어로만 작성할 것 (한국어 혼용 금지).
+5. scene_prompt_en은 Imagen 이미지 생성 모델에 직접 입력할 수 있어야 하므로, 명확한 영어 장면 묘사로 작성할 것.
+6. avoid에는 반복을 막을 금지 요소 3~5개를 넣을 것.
+7. 장면은 동양 전통 공간, 자연 풍경, 유럽 인테리어, 미니멀 공간 등을 명언 분위기에 맞게 다양하게 선택할 것.
+8. scene_prompt_en에 사람·얼굴·캐릭터 묘사를 넣지 말 것. 배경·빛·소품·자연 묘사만 사용할 것.
 
 JSON 스키마:
 {{
