@@ -2,8 +2,10 @@ name: Daily YouTube Short
 
 on:
   schedule:
-    # GitHub cron uses UTC. 22:00 UTC = 07:00 KST next day.
-    - cron: "0 22 * * *"
+    # GitHub scheduled workflows can be delayed or dropped at the start of the hour.
+    # Run twice off the hour so the second attempt backfills if the first one is dropped.
+    - cron: "8 22 * * *"   # 07:08 KST
+    - cron: "18 22 * * *"  # 07:18 KST
   workflow_dispatch:
     inputs:
       force:
