@@ -14,7 +14,6 @@
     "930cb2ee522fb24021eaae8015e6aba1cd8fde18",
     "98c1ebc98efd79ddd0b2a851bc82612ccfd185e6",
     "28d59344521642a898142450d68d80115d340d4f",
-    "8cc152b9a73fe0e7ba56065b8f7eb3e511d6a8ec",
     "e8f3431806965624077ddba412d6083f7ad08f5a",
     "de863c32d05e42af6ae160ccdd2366e54bbc7f08",
     "0503cc5d67d81ff4910d8882aeb1a42b1711a2c3",
@@ -33,10 +32,10 @@
     "26901b1051af21cc7b0929218d4024b03f9454a8",
     "8c8769f32739dc1a1270cc860a5ce31731198bec",
     "44fa08de533da4a94a2c60c852743a73fdd688ab",
-    "742d9b5facb691aa9b560853aa30a44abbce10e5"
+    "742d9b5facb691aa9b560853aa30a44abbce10e5",
+    "8cc152b9a73fe0e7ba56065b8f7eb3e511d6a8ec"
   ],
   "recent_titles": [
-    "서울의 아침, 사랑의 메아리",
     "강변의 새벽, 자유를 찾다",
     "봄 강변, 조용한 아침",
     "봄의 서재, 지혜의 빛",
@@ -55,10 +54,10 @@
     "고요한 오솔길의 깨달음",
     "구름 사이로 스며드는 봄기운",
     "밤의 고요, 한 걸음의 의지",
-    "아침 햇살의 깨달음"
+    "아침 햇살의 깨달음",
+    "봄 안개 속의 내적 나그네"
   ],
   "recent_quote_ids": [
-    "28d59344521642a898142450d68d80115d340d4f",
     "0503cc5d67d81ff4910d8882aeb1a42b1711a2c3",
     "a8d3280e673a76fd628c0ecbd378f82f80c85675",
     "1f4da7b7074e0521a0e38b2250b0d1d221f59a45",
@@ -77,10 +76,10 @@
     "26901b1051af21cc7b0929218d4024b03f9454a8",
     "8c8769f32739dc1a1270cc860a5ce31731198bec",
     "44fa08de533da4a94a2c60c852743a73fdd688ab",
-    "742d9b5facb691aa9b560853aa30a44abbce10e5"
+    "742d9b5facb691aa9b560853aa30a44abbce10e5",
+    "8cc152b9a73fe0e7ba56065b8f7eb3e511d6a8ec"
   ],
   "recent_image_fingerprints": [
-    "143d060aefc49c81",
     "3c8f2fab886f61ef",
     "8f73be2470ff4b3d",
     "29fc334c00e479ce",
@@ -99,16 +98,16 @@
     "f618e60cc423c2a5",
     "78cfe392830f196a",
     "be488481367fa952",
-    "ea4633d552254f5f"
+    "ea4633d552254f5f",
+    "5d172729c3c25824"
   ],
   "recent_visual_styles": [
     "photoreal",
     "watercolor",
-    "calligraphy",
-    "ink"
+    "ink",
+    "calligraphy"
   ],
   "recent_music_signatures": [
-    "1cb37bd7749c",
     "fb86173942a0",
     "b020821f021c",
     "79be46f33cb1",
@@ -127,7 +126,8 @@
     "3c6f1464843e",
     "bf9b127b4244",
     "11e88c68d46d",
-    "2cf1c8c0d900"
+    "2cf1c8c0d900",
+    "00a20017e151"
   ],
   "recent_music_assets": [],
   "recent_dates": [
@@ -140,6 +140,7 @@
     "2026-04-28",
     "2026-04-29",
     "2026-04-30",
-    "2026-05-01"
+    "2026-05-01",
+    "2026-05-02"
   ]
 }
