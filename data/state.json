@@ -1,6 +1,5 @@
 {
   "recent_topics": [
-    "친구",
     "그리움",
     "지혜",
     "달",
@@ -19,19 +18,19 @@
     "새벽",
     "비움",
     "숲",
-    "순간"
+    "순간",
+    "시간"
   ],
   "recent_visual_styles": [
     "pencil_sketch",
-    "photoreal",
     "photography",
     "watercolor",
     "ink",
-    "oil_painting"
+    "oil_painting",
+    "photoreal"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-04-28",
     "2026-04-29",
     "2026-04-30",
     "2026-05-01",
@@ -50,6 +49,7 @@
     "2026-05-14",
     "2026-05-15",
     "2026-05-16",
-    "2026-05-17"
+    "2026-05-17",
+    "2026-05-18"
   ]
 }
