@@ -9,7 +9,6 @@
     "아침",
     "비",
     "고독",
-    "꿈",
     "설렘",
     "위로",
     "용서",
@@ -19,15 +18,16 @@
     "비움",
     "숲",
     "순간",
-    "시간"
+    "시간",
+    "꿈"
   ],
   "recent_visual_styles": [
     "pencil_sketch",
-    "photography",
     "watercolor",
     "ink",
     "oil_painting",
-    "photoreal"
+    "photoreal",
+    "photography"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
