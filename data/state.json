@@ -1,6 +1,5 @@
 {
   "recent_topics": [
-    "창의",
     "새벽",
     "비움",
     "숲",
@@ -19,19 +18,19 @@
     "순간",
     "희망",
     "구름",
-    "해방"
+    "해방",
+    "실패"
   ],
   "recent_visual_styles": [
     "watercolor",
-    "oil_painting",
     "photography",
     "photoreal",
     "pencil_sketch",
-    "ink"
+    "ink",
+    "oil_painting"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-05-06",
     "2026-05-07",
     "2026-05-08",
     "2026-05-09",
@@ -50,6 +49,7 @@
     "2026-05-22",
     "2026-05-23",
     "2026-05-24",
-    "2026-05-25"
+    "2026-05-25",
+    "2026-05-26"
   ]
 }
