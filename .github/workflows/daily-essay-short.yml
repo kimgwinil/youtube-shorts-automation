@@ -2,8 +2,7 @@ name: Daily Essay Short
 
 on:
   schedule:
-    - cron: "0 21 * * *"   # 06:00 KST
-    - cron: "0 22 * * *"   # 07:00 KST
+    - cron: "10 18 * * *"   # 03:10 KST
   workflow_dispatch:
     inputs:
       force:
