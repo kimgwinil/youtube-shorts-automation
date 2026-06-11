@@ -8,7 +8,6 @@
     "치유",
     "본질",
     "사랑",
-    "균형",
     "웃음",
     "신뢰",
     "휴식",
@@ -19,19 +18,19 @@
     "해방",
     "눈물",
     "열정",
-    "자유"
+    "자유",
+    "균형"
   ],
   "recent_visual_styles": [
     "oil_painting",
-    "photography",
     "ink",
     "pencil_sketch",
     "photoreal",
-    "watercolor"
+    "watercolor",
+    "photography"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-05-22",
     "2026-05-23",
     "2026-05-24",
     "2026-05-25",
@@ -50,6 +49,7 @@
     "2026-06-08",
     "2026-06-09",
     "2026-06-10",
-    "2026-06-11"
+    "2026-06-11",
+    "2026-06-12"
   ]
 }
