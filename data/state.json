@@ -4,7 +4,6 @@
     "희망",
     "선택",
     "감사",
-    "자존",
     "치유",
     "본질",
     "사랑",
@@ -19,19 +18,19 @@
     "눈물",
     "열정",
     "자유",
-    "균형"
+    "균형",
+    "자존"
   ],
   "recent_visual_styles": [
-    "oil_painting",
     "ink",
     "pencil_sketch",
     "photoreal",
     "watercolor",
-    "photography"
+    "photography",
+    "oil_painting"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-05-23",
     "2026-05-24",
     "2026-05-25",
     "2026-05-26",
@@ -50,6 +49,7 @@
     "2026-06-09",
     "2026-06-10",
     "2026-06-11",
-    "2026-06-12"
+    "2026-06-12",
+    "2026-06-13"
   ]
 }
