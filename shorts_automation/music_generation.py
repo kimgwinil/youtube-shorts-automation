@@ -12,7 +12,7 @@ from .ffmpeg_utils import resolve_ffmpeg
 from .script_builder import EssayScript
 
 
-_MUSIC_VERSION = "gemini-v1"
+_MUSIC_VERSION = "piano-v2"
 _PCM_SAMPLE_RATE = 48_000
 _PCM_CHANNELS = 2
 _PCM_SAMPLE_WIDTH = 2
@@ -78,21 +78,21 @@ _INSTRUMENT_POOLS: dict[str, list[str]] = {
 _LOCAL_MOOD_PROFILES: dict = {
     "meditative": {
         "freqs": [392.00, 523.25, 587.33, 659.25, 783.99],
-        "tone_volume": 0.085,
+        "tone_volume": 0.112,
         "lowpass": 6400,
         "highpass": 520,
         "echo": "aecho=0.45:0.28:180|360:0.08|0.04",
     },
     "reflective": {
         "freqs": [440.00, 523.25, 659.25, 698.46, 880.00],
-        "tone_volume": 0.080,
+        "tone_volume": 0.106,
         "lowpass": 6200,
         "highpass": 540,
         "echo": "aecho=0.42:0.26:220|440:0.08|0.04",
     },
     "focused": {
         "freqs": [493.88, 587.33, 659.25, 783.99, 987.77],
-        "tone_volume": 0.075,
+        "tone_volume": 0.100,
         "lowpass": 6800,
         "highpass": 560,
         "echo": "aecho=0.38:0.24:160|320:0.07|0.035",
@@ -213,7 +213,7 @@ def _build_gemini_prompts(script: EssayScript, base_prompts: list[tuple[str, flo
     prompts.append((f"theme: {script.topic}", 0.50))
     prompts.append((script.bgm_prompt_en, 1.1))
     prompts.append((_essay_music_direction(script), 0.60))
-    prompts.append(("solo calm piano only, no bass instrument, no synthesizer drone, no low frequency rumble", 1.00))
+    prompts.append(("solo calm piano only, no guitar, no strings, no bass instrument, no synthesizer drone, no low frequency rumble", 1.25))
     prompts.append(("background score for short inspirational essay video, gentle piano arpeggios, airy and clear", 0.55))
     return prompts
 
@@ -221,18 +221,18 @@ def _build_gemini_prompts(script: EssayScript, base_prompts: list[tuple[str, flo
 def _essay_music_direction(script: EssayScript) -> str:
     topic = script.topic
     if topic in ("사랑", "그리움", "이별", "눈물", "외로움"):
-        return "reflective texture, soft felt piano, restrained strings, emotional but controlled, no bass drone"
+        return "reflective solo felt piano, emotional but controlled, no bass drone"
     if topic in ("희망", "용기", "도전", "성장", "꿈", "설렘"):
-        return "uplifting ambient texture, bright melodic arpeggios, gentle piano, light strings, hopeful tone, no bass rumble"
+        return "uplifting solo piano, bright melodic arpeggios, hopeful tone, no bass rumble"
     if topic in ("아침", "새벽", "햇살", "봄", "자연", "바람"):
-        return "quiet meditative space, airy atmospheric pads, warm resonance, minimal low end, contemplative pacing"
+        return "quiet meditative solo piano, airy warm resonance, minimal low end, contemplative pacing"
     if topic in ("친구", "가족", "감사", "만남", "웃음"):
-        return "warm ambient texture, gentle guitar or piano, bright tone, nostalgic warmth, no bass"
+        return "warm solo piano, bright tone, nostalgic warmth, no bass"
     if topic in ("고독", "침묵", "고요", "겨울", "비"):
-        return "sparse cinematic ambient, distant reverb, sparse piano, no heavy bass, timeless stillness"
+        return "sparse solo piano, distant reverb, no heavy bass, timeless stillness"
     if topic in ("지혜", "믿음", "평화", "용서", "치유"):
-        return "gentle meditative tone, soft strings, warm pads, peaceful resolution, no bass rumble"
-    return "balanced inspirational ambient, warm midrange clarity, light melodic contour, no heavy bass"
+        return "gentle meditative solo piano, peaceful resolution, no bass rumble"
+    return "balanced inspirational solo piano, warm midrange clarity, light melodic contour, no heavy bass"
 
 
 def _transcode_pcm_to_m4a(raw_path: Path, output_path: Path, duration: float) -> None:
@@ -263,7 +263,8 @@ def _transcode_pcm_to_m4a(raw_path: Path, output_path: Path, duration: float) ->
 
 
 def _generate_music_locally(script: EssayScript, signature: str, output_dir: Path) -> Path:
-    output_path = output_dir / f"{signature}_local-v3_bgm.m4a"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"{signature}_local-piano-v4_bgm.m4a"
     seed = int(sha1(signature.encode()).hexdigest()[:8], 16)
     rng = random.Random(seed)
     profile = _LOCAL_MOOD_PROFILES.get(script.bgm_mood, _LOCAL_MOOD_PROFILES["reflective"])
@@ -272,14 +273,20 @@ def _generate_music_locally(script: EssayScript, signature: str, output_dir: Pat
     freqs = [profile["freqs"][index % len(profile["freqs"])] for index in range(note_count)]
     rng.shuffle(freqs)
     cmd = [resolve_ffmpeg(), "-y"]
-    note_duration = 0.86
+    note_duration = 1.12
     step = max(script.total_duration / note_count, 0.72)
     for freq in freqs:
         f = round(freq * (1 + rng.uniform(-0.003, 0.003)), 2)
-        cmd.extend(["-f", "lavfi", "-i", f"sine=frequency={f}:sample_rate=44100:duration={note_duration:.2f}"])
+        tone = (
+            f"aevalsrc=(0.78*sin(2*PI*{f}*t)"
+            f"+0.24*sin(2*PI*{round(f * 2.01, 2)}*t)"
+            f"+0.10*sin(2*PI*{round(f * 3.02, 2)}*t))*exp(-3.15*t)"
+            f":s=44100:d={note_duration:.2f}"
+        )
+        cmd.extend(["-f", "lavfi", "-i", tone])
     tone_chains = []
     for index in range(len(freqs)):
-        volume = round(profile["tone_volume"] * rng.uniform(0.82, 0.98), 3)
+        volume = round(profile["tone_volume"] * rng.uniform(0.90, 1.12), 3)
         delay_ms = int(index * step * 1000)
         left = round(rng.uniform(0.50, 0.88), 2)
         right = round(rng.uniform(0.50, 0.88), 2)
@@ -287,7 +294,7 @@ def _generate_music_locally(script: EssayScript, signature: str, output_dir: Pat
             f"[{index}:a]highpass=f={profile['highpass']},"
             f"lowpass=f={profile['lowpass']},"
             f"volume={volume},"
-            "afade=t=in:st=0:d=0.015,afade=t=out:st=0.24:d=0.62,"
+            "afade=t=in:st=0:d=0.012,afade=t=out:st=0.36:d=0.74,"
             f"adelay={delay_ms}|{delay_ms},"
             f"pan=stereo|c0={left}*c0|c1={right}*c0[t{index}]"
         )
@@ -302,8 +309,8 @@ def _generate_music_locally(script: EssayScript, signature: str, output_dir: Pat
         "equalizer=f=180:t=q:w=1.2:g=-14,"
         "equalizer=f=260:t=q:w=1.0:g=-10,"
         "equalizer=f=2400:t=q:w=1.0:g=2.0,"
-        "alimiter=limit=0.80,"
-        "volume=1.05[aout]"
+        "alimiter=limit=0.82,"
+        "volume=1.12[aout]"
     )
     cmd.extend([
         "-filter_complex", fc,
