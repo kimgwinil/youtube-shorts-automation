@@ -1,6 +1,5 @@
 {
   "recent_topics": [
-    "선택",
     "감사",
     "치유",
     "본질",
@@ -19,15 +18,16 @@
     "균형",
     "자존",
     "시간",
-    "현재"
+    "현재",
+    "깊이"
   ],
   "recent_visual_styles": [
     "pencil_sketch",
-    "watercolor",
     "photography",
     "oil_painting",
     "photoreal",
-    "ink"
+    "ink",
+    "watercolor"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
