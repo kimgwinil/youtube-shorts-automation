@@ -1,6 +1,5 @@
 {
   "recent_topics": [
-    "치유",
     "본질",
     "사랑",
     "웃음",
@@ -19,19 +18,19 @@
     "시간",
     "현재",
     "깊이",
-    "부모"
+    "부모",
+    "회복"
   ],
   "recent_visual_styles": [
-    "pencil_sketch",
     "oil_painting",
     "photoreal",
     "ink",
     "watercolor",
-    "photography"
+    "photography",
+    "pencil_sketch"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-05-25",
     "2026-05-26",
     "2026-05-27",
     "2026-05-28",
@@ -50,6 +49,7 @@
     "2026-06-11",
     "2026-06-12",
     "2026-06-13",
-    "2026-06-15"
+    "2026-06-15",
+    "2026-06-16"
   ]
 }
