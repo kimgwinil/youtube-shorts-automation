@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import random
 import time
 from dataclasses import dataclass
@@ -108,14 +109,25 @@ def build_essay_package(
             variation_seed=variation_seed,
         )
     except Exception as exc:
-        print(f"[text] OpenAI essay generation failed; using local fallback: {exc}")
-        script = _build_local_fallback_essay(
-            topic=topic,
-            tone=tone,
-            visual_style=visual_style,
-            context=context,
-            variation_seed=variation_seed,
-        )
+        print(f"[text] OpenAI essay generation failed; trying Gemini fallback: {exc}")
+        try:
+            script = _generate_essay_with_gemini(
+                topic=topic,
+                tone=tone,
+                visual_style=visual_style,
+                context=context,
+                gemini_api_key=gemini_api_key,
+                variation_seed=variation_seed,
+            )
+        except Exception as gemini_exc:
+            print(f"[text] Gemini essay generation failed; using local fallback: {gemini_exc}")
+            script = _build_local_fallback_essay(
+                topic=topic,
+                tone=tone,
+                visual_style=visual_style,
+                context=context,
+                variation_seed=variation_seed,
+            )
 
     background_path = _generate_background(
         script=script,
@@ -216,7 +228,57 @@ def _generate_essay(
     from openai import OpenAI
 
     client = OpenAI(api_key=openai_api_key)
+    system_prompt, user_prompt = _essay_prompts(topic, tone, visual_style, context, variation_seed)
 
+    response = client.chat.completions.create(
+        model=text_model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.92,
+        response_format={"type": "json_object"},
+    )
+
+    raw = response.choices[0].message.content or "{}"
+    return _essay_script_from_data(json.loads(raw), topic, visual_style)
+
+
+def _generate_essay_with_gemini(
+    topic: str,
+    tone: str,
+    visual_style: str,
+    context: DailyContext,
+    gemini_api_key: str,
+    variation_seed: str,
+) -> EssayScript:
+    if not gemini_api_key:
+        raise RuntimeError("Gemini API key is not configured.")
+    from google import genai
+    from google.genai import types
+
+    system_prompt, user_prompt = _essay_prompts(topic, tone, visual_style, context, variation_seed)
+    client = genai.Client(api_key=gemini_api_key)
+    model = os.environ.get("GEMINI_TEXT_MODEL", "gemini-2.5-flash")
+    response = client.models.generate_content(
+        model=model,
+        contents=f"{system_prompt}\n\n{user_prompt}",
+        config=types.GenerateContentConfig(
+            temperature=0.92,
+            response_mime_type="application/json",
+        ),
+    )
+    raw = response.text or "{}"
+    return _essay_script_from_data(json.loads(raw), topic, visual_style)
+
+
+def _essay_prompts(
+    topic: str,
+    tone: str,
+    visual_style: str,
+    context: DailyContext,
+    variation_seed: str,
+) -> tuple[str, str]:
     system_prompt = (
         "당신은 깊이 있는 감성과 문학적 언어를 가진 한국어 에세이 작가입니다.\n"
         "매일 아침 유튜브 숏츠용 짧은 에세이 또는 좋은 글귀를 작성합니다.\n"
@@ -264,20 +326,10 @@ def _generate_essay(
         "bgm_mood 옵션: meditative, reflective, focused\n"
         "mood 옵션: calm, hopeful, melancholic, peaceful, energetic, tender"
     )
+    return system_prompt, user_prompt
 
-    response = client.chat.completions.create(
-        model=text_model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.92,
-        response_format={"type": "json_object"},
-    )
 
-    raw = response.choices[0].message.content or "{}"
-    data = json.loads(raw)
-
+def _essay_script_from_data(data: dict, topic: str, visual_style: str) -> EssayScript:
     lines = data.get("lines", [])
     if not (5 <= len(lines) <= 6):
         lines = (lines + [""] * 6)[:6] if len(lines) < 5 else lines[:6]
