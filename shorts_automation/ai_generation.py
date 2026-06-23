@@ -97,15 +97,25 @@ def build_essay_package(
     visual_style = _pick_visual_style(state=state, date_iso=context.date_iso, variation_seed=variation_seed)
 
     tone = _pick_tone(date_iso=context.date_iso, variation_seed=variation_seed)
-    script = _generate_essay(
-        topic=topic,
-        tone=tone,
-        visual_style=visual_style,
-        context=context,
-        openai_api_key=openai_api_key,
-        text_model=text_model,
-        variation_seed=variation_seed,
-    )
+    try:
+        script = _generate_essay(
+            topic=topic,
+            tone=tone,
+            visual_style=visual_style,
+            context=context,
+            openai_api_key=openai_api_key,
+            text_model=text_model,
+            variation_seed=variation_seed,
+        )
+    except Exception as exc:
+        print(f"[text] OpenAI essay generation failed; using local fallback: {exc}")
+        script = _build_local_fallback_essay(
+            topic=topic,
+            tone=tone,
+            visual_style=visual_style,
+            context=context,
+            variation_seed=variation_seed,
+        )
 
     background_path = _generate_background(
         script=script,
@@ -121,6 +131,58 @@ def build_essay_package(
     bgm_signature = sig_base[:20].replace(" ", "_")
 
     return EssayPackage(script=script, background_path=background_path, bgm_signature=bgm_signature)
+
+
+def _build_local_fallback_essay(
+    topic: str,
+    tone: str,
+    visual_style: str,
+    context: DailyContext,
+    variation_seed: str,
+) -> EssayScript:
+    seeded = random.Random(f"{context.date_iso}|fallback|{topic}|{tone}|{variation_seed}")
+    openings = [
+        f"{topic}은 하루의 가장 작은 틈에서 먼저 마음을 두드린다",
+        f"오늘의 {topic}은 큰 결심보다 조용한 한 걸음에서 시작된다",
+        f"{topic}을 오래 바라보면 마음은 서두르던 방향을 다시 고른다",
+    ]
+    middles = [
+        f"{context.season_ko}의 공기 속에서 우리는 지나간 마음을 천천히 정리한다",
+        f"{context.weather_summary_ko}라는 배경은 익숙한 생각에도 새 빛을 얹어 준다",
+        "말보다 오래 남는 것은 결국 오늘을 견딘 태도와 작은 선택이다",
+        "흔들림을 없애려 애쓰기보다 흔들리는 나를 끝까지 데리고 간다",
+    ]
+    closings = [
+        f"그래서 오늘의 {topic}은 멀리 있는 답보다 곁의 순간을 붙드는 일이다",
+        "마음이 조금 느려질 때, 삶은 다시 알아들을 수 있는 목소리로 온다",
+        "작은 문장을 오래 품으면 하루의 표정도 조금은 다르게 열린다",
+    ]
+    lines = [seeded.choice(openings), *seeded.sample(middles, k=3), seeded.choice(closings)]
+    image_prompt_en = (
+        f"{context.season_ko} morning atmosphere in Seoul, {topic} theme, "
+        f"{visual_style} style, quiet natural light, no people, calm empty lower frame"
+    )
+    bgm_prompt_en = (
+        f"{tone} Korean inspirational short background music, soft piano, "
+        "warm ambient texture, no vocals, gentle pacing"
+    )
+    title = f"{topic}을 붙드는 아침 #Shorts"
+    description = f"{lines[0]}\n\n#Shorts #쇼츠 #에세이 #감성 #아침"
+    return EssayScript(
+        topic=topic,
+        lines=lines,
+        author_line="gikim",
+        source_line="gikim",
+        is_original=True,
+        visual_style=visual_style,
+        image_prompt_en=image_prompt_en,
+        bgm_prompt_en=bgm_prompt_en,
+        bgm_mood="reflective",
+        mood="calm",
+        title=title[:100],
+        description=description,
+        tags=["에세이", "감성", topic, visual_style],
+    )
 
 
 def _pick_topic(state: dict, date_iso: str, variation_seed: str) -> str:
