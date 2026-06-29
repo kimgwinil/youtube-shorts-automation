@@ -421,6 +421,7 @@ def _try_dalle3(prompt: str, output_path: Path, openai_api_key: str) -> bool:
         return False
     try:
         import base64
+        import urllib.request
         from openai import OpenAI
         client = OpenAI(api_key=openai_api_key)
         resp = client.images.generate(
@@ -428,10 +429,18 @@ def _try_dalle3(prompt: str, output_path: Path, openai_api_key: str) -> bool:
             prompt=prompt,
             size="1024x1792",
             quality="hd",
-            response_format="b64_json",
             n=1,
         )
-        image_bytes = base64.b64decode(resp.data[0].b64_json)
+        image_data = resp.data[0]
+        b64_json = getattr(image_data, "b64_json", None)
+        if b64_json:
+            image_bytes = base64.b64decode(b64_json)
+        else:
+            image_url = getattr(image_data, "url", None)
+            if not image_url:
+                raise ValueError("이미지 응답에 b64_json/url이 없습니다.")
+            with urllib.request.urlopen(image_url, timeout=60) as response:
+                image_bytes = response.read()
         output_path.write_bytes(image_bytes)
         _normalize_to_9_16(output_path)
         return True
@@ -497,4 +506,45 @@ def _generate_background(
         except Exception as exc:
             print(f"[image] Imagen 시도 {attempt + 1} 실패: {exc}")
 
-    raise RuntimeError(f"배경 이미지 생성 실패 (모든 시도): {script.topic}")
+    _generate_local_background(output_path, script.topic, script.mood, variation_seed)
+    print(f"[image] API 배경 생성 실패 — 로컬 9:16 fallback 사용: {output_path.name} / 주제: {script.topic}")
+    return output_path
+
+
+def _generate_local_background(output_path: Path, topic: str, mood: str, variation_seed: str) -> None:
+    from PIL import Image, ImageDraw, ImageFilter
+
+    width, height = TARGET_RESOLUTION
+    palettes = {
+        "calm": ((18, 35, 50), (212, 198, 172), (88, 120, 132)),
+        "warm": ((54, 34, 40), (236, 176, 112), (112, 78, 68)),
+        "clear": ((20, 48, 72), (180, 218, 224), (76, 112, 142)),
+        "deep": ((20, 24, 36), (120, 104, 154), (58, 72, 96)),
+    }
+    palette_key = "warm" if mood in {"hopeful", "warm"} else "clear" if topic in {"새벽", "아침", "봄"} else "deep"
+    top, bottom, accent = palettes.get(palette_key, palettes["calm"])
+    image = Image.new("RGB", (width, height), top)
+    draw = ImageDraw.Draw(image)
+    for y in range(height):
+        ratio = y / max(height - 1, 1)
+        color = tuple(int(top[i] * (1 - ratio) + bottom[i] * ratio) for i in range(3))
+        draw.line([(0, y), (width, y)], fill=color)
+
+    seed = sum(ord(ch) for ch in f"{topic}|{mood}|{variation_seed}")
+    for index in range(7):
+        x = (seed * (index + 3) * 97) % width
+        y = 180 + ((seed * (index + 5) * 53) % 900)
+        radius = 160 + ((seed + index * 71) % 220)
+        alpha = 28 + (index % 3) * 12
+        overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        odraw = ImageDraw.Draw(overlay)
+        odraw.ellipse(
+            [x - radius, y - radius, x + radius, y + radius],
+            fill=(*accent, alpha),
+        )
+        image = Image.alpha_composite(image.convert("RGBA"), overlay).convert("RGB")
+
+    image = image.filter(ImageFilter.GaussianBlur(10))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(output_path)
+    _normalize_to_9_16(output_path)
