@@ -81,6 +81,7 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
             "metadata_path": str(render_result.metadata_path),
             "youtube_video_id": None,
             "uploaded": False,
+            "imageGeneration": package.image_request_state,
         }
 
     upload_result = upload_video(
@@ -115,4 +116,5 @@ def run_pipeline(project_root: Path, dry_run: bool = False, force: bool = False)
         "uploaded": True,
         "topic": package.script.topic,
         "visual_style": package.script.visual_style,
+        "imageGeneration": package.image_request_state,
     }
