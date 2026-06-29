@@ -53,6 +53,7 @@ CONTENT_TONES = [
 _NO_TEXT = (
     "CRITICAL: zero text anywhere — no Korean hangul, no Chinese hanja, no kanji, "
     "no Latin letters, no Arabic numerals, no calligraphy script, no signage, "
+    "no glyph-like marks, no pseudo-letters, no decorative writing strokes, "
     "no watermark, no stamp, no label, no caption. Pure image only."
 )
 _NO_COLLAGE = (
@@ -382,7 +383,7 @@ def _dalle3_prompt(style_prefix: str, scene: str, topic: str) -> str:
         f"Background image for a Korean inspirational essay short video. "
         f"Style: {style_prefix}. Scene: {scene}. Topic: {topic}. "
         "IMPORTANT: Do not include any text, letters, words, characters, numbers, "
-        "signs, watermarks, or writing of any kind anywhere in the image. "
+        "signs, watermarks, writing, fake letters, glyph-like marks, or calligraphy anywhere in the image. "
         "The bottom 40% of the image must be kept very calm, simple, and empty "
         "(reserved for subtitle text overlay — no objects, no detail). "
         "The top-left area must be plain and uncluttered "
@@ -399,8 +400,8 @@ TARGET_RESOLUTION = (1080, 1920)  # 9:16 세로 쇼츠
 def _normalize_to_9_16(image_path: Path, target: tuple[int, int] = TARGET_RESOLUTION) -> None:
     """생성된 배경 이미지를 정확한 9:16(1080x1920) 프레임으로 맞춘다.
 
-    DALL-E(gpt-image-1)는 1024x1536(=2:3), Imagen은 모델별로 미세하게 다른
-    크기를 반환하므로, 중앙 기준 cover-crop으로 9:16 비율을 보장한다.
+    DALL-E 3 uses 1024x1792 for portrait 9:16; Imagen can still return
+    slightly different dimensions by model, so this enforces the final frame.
     이렇게 하면 저장되는 배경 자체가 9:16이 되어 렌더 단계의 추가 크롭이
     예측 가능해지고, 배경 비율이 9:16이 아닌 문제를 방지한다.
     """
@@ -423,10 +424,11 @@ def _try_dalle3(prompt: str, output_path: Path, openai_api_key: str) -> bool:
         from openai import OpenAI
         client = OpenAI(api_key=openai_api_key)
         resp = client.images.generate(
-            model="gpt-image-1",
+            model="dall-e-3",
             prompt=prompt,
-            size="1024x1536",
-            quality="high",
+            size="1024x1792",
+            quality="hd",
+            response_format="b64_json",
             n=1,
         )
         image_bytes = base64.b64decode(resp.data[0].b64_json)

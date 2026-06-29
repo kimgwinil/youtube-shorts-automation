@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 from typing import List, Sequence, Tuple
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 from .ffmpeg_utils import resolve_ffmpeg
 from .narration import NarrationResult, SUBTITLE_LEAD, SUBTITLE_TAIL
@@ -41,6 +41,7 @@ def render_short(
     stem = f"{timestamp}_{script.topic}"
     video_path = output_dir / f"{stem}.mp4"
     metadata_path = output_dir / f"{stem}.json"
+    render_background_path = _prepare_background_for_render(background_path, output_dir, stem)
 
     line_overlays = [
         output_dir / f"{stem}_line_{i + 1}.png"
@@ -91,6 +92,7 @@ def render_short(
                 "image_prompt_en": script.image_prompt_en,
                 "bgm_prompt_en": script.bgm_prompt_en,
                 "background": str(background_path),
+                "render_background": str(render_background_path),
                 "bgm": str(bgm_path) if bgm_path else None,
                 "narration": [str(p) for p in narration.line_audio_paths] if narration else None,
                 "duration_seconds": script.total_duration,
@@ -102,7 +104,7 @@ def render_short(
     )
 
     cmd = _build_render_cmd(
-        background=background_path,
+        background=render_background_path,
         bgm=bgm_path,
         line_overlays=line_overlays,
         header_overlay=header_overlay,
@@ -180,7 +182,7 @@ def _filter_graph(
         ]
     else:
         timings = _line_timings(num_lines)
-    parts = ["[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[v0]"]
+    parts = ["[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v0]"]
     current = "[v0]"
 
     for index, (start, end) in enumerate(timings, start=1):
@@ -248,6 +250,30 @@ def _filter_graph(
         audio_map = "[aout]"
 
     return ";".join(parts), final_label, audio_map
+
+
+def _prepare_background_for_render(background_path: Path, output_dir: Path, stem: str) -> Path:
+    if background_path.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
+        return background_path
+
+    target_size = (1080, 1920)
+    with Image.open(background_path) as source:
+        source = ImageOps.exif_transpose(source).convert("RGB")
+        if source.size == target_size:
+            return background_path
+
+        fill = ImageOps.fit(source, target_size, method=Image.Resampling.LANCZOS)
+        fill = fill.filter(ImageFilter.GaussianBlur(28))
+        fill = ImageOps.autocontrast(fill)
+
+        foreground = ImageOps.contain(source, target_size, method=Image.Resampling.LANCZOS)
+        x = (target_size[0] - foreground.width) // 2
+        y = (target_size[1] - foreground.height) // 2
+        fill.paste(foreground, (x, y))
+
+    prepared_path = output_dir / f"{stem}_background_9x16.png"
+    fill.save(prepared_path)
+    return prepared_path
 
 
 def _line_timings(num_lines: int) -> List[Tuple[float, float]]:
