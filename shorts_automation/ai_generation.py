@@ -51,9 +51,8 @@ CONTENT_TONES = [
 ]
 
 _NO_TEXT = (
-    "CRITICAL: zero text anywhere — no Korean hangul, no Chinese hanja, no kanji, "
-    "no Latin letters, no Arabic numerals, no calligraphy script, no signage, "
-    "no glyph-like marks, no pseudo-letters, no decorative writing strokes, "
+    "Do not invent any background text or symbols. No inaccurate Korean, no pseudo-letters, "
+    "no unreadable glyph-like marks, no decorative writing strokes, no signage, "
     "no watermark, no stamp, no label, no caption. Pure image only."
 )
 _NO_COLLAGE = (
@@ -382,8 +381,9 @@ def _dalle3_prompt(style_prefix: str, scene: str, topic: str) -> str:
     return (
         f"Background image for a Korean inspirational essay short video. "
         f"Style: {style_prefix}. Scene: {scene}. Topic: {topic}. "
-        "IMPORTANT: Do not include any text, letters, words, characters, numbers, "
-        "signs, watermarks, writing, fake letters, glyph-like marks, or calligraphy anywhere in the image. "
+        "IMPORTANT: Do not invent any background text, signs, watermarks, writing, "
+        "fake letters, unreadable Korean-like marks, glyph-like marks, or calligraphy in the image. "
+        "Korean title/subtitle text will be rendered later by the video pipeline, not inside the background image. "
         "The bottom 40% of the image must be kept very calm, simple, and empty "
         "(reserved for subtitle text overlay — no objects, no detail). "
         "The top-left area must be plain and uncluttered "
@@ -400,8 +400,9 @@ TARGET_RESOLUTION = (1080, 1920)  # 9:16 세로 쇼츠
 def _normalize_to_9_16(image_path: Path, target: tuple[int, int] = TARGET_RESOLUTION) -> None:
     """생성된 배경 이미지를 정확한 9:16(1080x1920) 프레임으로 맞춘다.
 
-    DALL-E 3 uses 1024x1792 for portrait 9:16; Imagen can still return
-    slightly different dimensions by model, so this enforces the final frame.
+    GPT Image portrait output uses 1024x1536 and DALL-E 3 uses 1024x1792;
+    Imagen can still return slightly different dimensions by model, so this
+    enforces the final frame.
     이렇게 하면 저장되는 배경 자체가 9:16이 되어 렌더 단계의 추가 크롭이
     예측 가능해지고, 배경 비율이 9:16이 아닌 문제를 방지한다.
     """
@@ -416,37 +417,49 @@ def _normalize_to_9_16(image_path: Path, target: tuple[int, int] = TARGET_RESOLU
         print(f"[image] 9:16 정규화 실패(원본 유지): {exc}")
 
 
-def _try_dalle3(prompt: str, output_path: Path, openai_api_key: str) -> bool:
+def _try_openai_image(prompt: str, output_path: Path, openai_api_key: str) -> str | None:
     if not openai_api_key:
-        return False
-    try:
-        import base64
-        import urllib.request
-        from openai import OpenAI
-        client = OpenAI(api_key=openai_api_key)
-        resp = client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1792",
-            quality="hd",
-            n=1,
-        )
-        image_data = resp.data[0]
-        b64_json = getattr(image_data, "b64_json", None)
-        if b64_json:
-            image_bytes = base64.b64decode(b64_json)
+        return None
+    import base64
+    import urllib.request
+    from openai import OpenAI
+
+    client = OpenAI(api_key=openai_api_key)
+    preferred_model = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1")
+    quality = os.environ.get("OPENAI_IMAGE_QUALITY", "low")
+    ordered_models = [preferred_model, "gpt-image-1", "gpt-image-1-mini", "dall-e-3", "dall-e-2"]
+    candidates: list[tuple[str, dict[str, str]]] = []
+    for model in ordered_models:
+        if any(existing == model for existing, _ in candidates):
+            continue
+        if model.startswith("gpt-image-"):
+            candidates.append((model, {"size": "1024x1536", "quality": quality}))
+        elif model == "dall-e-3":
+            candidates.append((model, {"size": "1024x1792", "quality": "hd"}))
+        elif model == "dall-e-2":
+            candidates.append((model, {"size": "1024x1024"}))
         else:
-            image_url = getattr(image_data, "url", None)
-            if not image_url:
-                raise ValueError("이미지 응답에 b64_json/url이 없습니다.")
-            with urllib.request.urlopen(image_url, timeout=60) as response:
-                image_bytes = response.read()
-        output_path.write_bytes(image_bytes)
-        _normalize_to_9_16(output_path)
-        return True
-    except Exception as exc:
-        print(f"[image] DALL-E 3 실패: {exc}")
-        return False
+            candidates.append((model, {"size": "1024x1536", "quality": quality}))
+
+    for model, params in candidates:
+        try:
+            resp = client.images.generate(model=model, prompt=prompt, n=1, **params)
+            image_data = resp.data[0]
+            b64_json = getattr(image_data, "b64_json", None)
+            if b64_json:
+                image_bytes = base64.b64decode(b64_json)
+            else:
+                image_url = getattr(image_data, "url", None)
+                if not image_url:
+                    raise ValueError("이미지 응답에 b64_json/url이 없습니다.")
+                with urllib.request.urlopen(image_url, timeout=60) as response:
+                    image_bytes = response.read()
+            output_path.write_bytes(image_bytes)
+            _normalize_to_9_16(output_path)
+            return model
+        except Exception as exc:
+            print(f"[image] OpenAI 이미지 모델 실패 ({model}): {exc}")
+    return None
 
 
 def _generate_background(
@@ -470,10 +483,11 @@ def _generate_background(
 
     style_prefix = _STYLE_PREFIX.get(script.visual_style, "artistic, no text")
 
-    # ── 1차: DALL-E 3 (텍스트 미생성 신뢰도 높음) ──
-    dalle3_p = _dalle3_prompt(style_prefix, script.image_prompt_en, script.topic)
-    if _try_dalle3(dalle3_p, output_path, openai_api_key):
-        print(f"[image] DALL-E 3 배경 생성 완료: {output_path.name} / 주제: {script.topic}")
+    # ── 1차: OpenAI 이미지 모델 (GPT Image 우선, DALL-E는 fallback) ──
+    openai_prompt = _dalle3_prompt(style_prefix, script.image_prompt_en, script.topic)
+    openai_model = _try_openai_image(openai_prompt, output_path, openai_api_key)
+    if openai_model:
+        print(f"[image] OpenAI 배경 생성 완료 ({openai_model}): {output_path.name} / 주제: {script.topic}")
         return output_path
 
     # ── 2차 fallback: Imagen ──
