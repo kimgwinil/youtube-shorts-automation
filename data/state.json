@@ -9,7 +9,6 @@
     "변화",
     "도전",
     "눈",
-    "구름",
     "용기",
     "이별",
     "운명",
@@ -19,19 +18,19 @@
     "비",
     "기억",
     "믿음",
-    "집"
+    "집",
+    "구름"
   ],
   "recent_visual_styles": [
-    "photoreal",
     "ink",
     "watercolor",
     "oil_painting",
     "photography",
-    "pencil_sketch"
+    "pencil_sketch",
+    "photoreal"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-06-09",
     "2026-06-10",
     "2026-06-11",
     "2026-06-12",
@@ -50,6 +49,7 @@
     "2026-06-27",
     "2026-06-28",
     "2026-06-29",
-    "2026-06-30"
+    "2026-06-30",
+    "2026-07-01"
   ]
 }
