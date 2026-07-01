@@ -1,6 +1,5 @@
 {
   "recent_topics": [
-    "깊이",
     "부모",
     "회복",
     "바람",
@@ -19,19 +18,19 @@
     "기억",
     "믿음",
     "집",
-    "구름"
+    "구름",
+    "실패"
   ],
   "recent_visual_styles": [
-    "ink",
     "watercolor",
     "oil_painting",
     "photography",
     "pencil_sketch",
-    "photoreal"
+    "photoreal",
+    "ink"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-06-10",
     "2026-06-11",
     "2026-06-12",
     "2026-06-13",
@@ -50,6 +49,7 @@
     "2026-06-28",
     "2026-06-29",
     "2026-06-30",
-    "2026-07-01"
+    "2026-07-01",
+    "2026-07-02"
   ]
 }
