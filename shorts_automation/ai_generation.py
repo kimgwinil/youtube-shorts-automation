@@ -237,17 +237,18 @@ def _generate_essay(
     client = OpenAI(api_key=openai_api_key)
     system_prompt, user_prompt = _essay_prompts(topic, tone, visual_style, context, variation_seed)
 
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model=text_model,
-        messages=[
+        input=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        temperature=0.92,
-        response_format={"type": "json_object"},
+        text={"format": {"type": "json_object"}},
+        reasoning={"effort": "none"},
+        store=False,
     )
 
-    raw = response.choices[0].message.content or "{}"
+    raw = response.output_text or "{}"
     return _essay_script_from_data(json.loads(raw), topic, visual_style)
 
 
