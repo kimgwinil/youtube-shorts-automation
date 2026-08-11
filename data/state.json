@@ -1,7 +1,6 @@
 {
   "recent_topics": [
     "배려",
-    "내려놓음",
     "행복",
     "포용",
     "휴식",
@@ -19,19 +18,19 @@
     "새벽",
     "현재",
     "연대",
-    "믿음"
+    "믿음",
+    "내려놓음"
   ],
   "recent_visual_styles": [
     "watercolor",
     "ink",
-    "oil_painting",
     "photography",
     "photoreal",
-    "pencil_sketch"
+    "pencil_sketch",
+    "oil_painting"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-07-21",
     "2026-07-22",
     "2026-07-23",
     "2026-07-24",
@@ -50,6 +49,7 @@
     "2026-08-08",
     "2026-08-09",
     "2026-08-10",
-    "2026-08-11"
+    "2026-08-11",
+    "2026-08-12"
   ]
 }
