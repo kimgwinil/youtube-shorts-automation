@@ -4,7 +4,6 @@
     "균형",
     "달빛",
     "선택",
-    "여행",
     "새벽",
     "현재",
     "연대",
@@ -19,19 +18,19 @@
     "희망",
     "외로움",
     "본질",
-    "운명"
+    "운명",
+    "여행"
   ],
   "recent_visual_styles": [
     "oil_painting",
-    "watercolor",
     "ink",
     "photoreal",
     "pencil_sketch",
-    "photography"
+    "photography",
+    "watercolor"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-08-03",
     "2026-08-04",
     "2026-08-05",
     "2026-08-06",
@@ -50,6 +49,7 @@
     "2026-08-19",
     "2026-08-20",
     "2026-08-21",
-    "2026-08-22"
+    "2026-08-22",
+    "2026-08-23"
   ]
 }
