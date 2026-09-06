@@ -7,7 +7,6 @@
     "여행",
     "기억",
     "이별",
-    "단순",
     "인내",
     "순간",
     "믿음",
@@ -19,19 +18,19 @@
     "산",
     "끈기",
     "웃음",
-    "집중"
+    "집중",
+    "단순"
   ],
   "recent_visual_styles": [
     "oil_painting",
-    "pencil_sketch",
     "ink",
     "photoreal",
     "watercolor",
-    "photography"
+    "photography",
+    "pencil_sketch"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-08-18",
     "2026-08-19",
     "2026-08-20",
     "2026-08-21",
@@ -50,6 +49,7 @@
     "2026-09-03",
     "2026-09-04",
     "2026-09-05",
-    "2026-09-06"
+    "2026-09-06",
+    "2026-09-07"
   ]
 }
