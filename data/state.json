@@ -1,6 +1,5 @@
 {
   "recent_topics": [
-    "여행",
     "기억",
     "이별",
     "인내",
@@ -19,19 +18,19 @@
     "눈물",
     "자유",
     "숲",
-    "바람"
+    "바람",
+    "구름"
   ],
   "recent_visual_styles": [
-    "photoreal",
     "pencil_sketch",
     "ink",
     "oil_painting",
     "watercolor",
-    "photography"
+    "photography",
+    "photoreal"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-08-23",
     "2026-08-24",
     "2026-08-25",
     "2026-08-26",
@@ -50,6 +49,7 @@
     "2026-09-08",
     "2026-09-09",
     "2026-09-10",
-    "2026-09-11"
+    "2026-09-11",
+    "2026-09-12"
   ]
 }
