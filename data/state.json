@@ -1,6 +1,5 @@
 {
   "recent_topics": [
-    "자유",
     "숲",
     "바람",
     "구름",
@@ -19,19 +18,19 @@
     "진정성",
     "별빛",
     "도전",
-    "시간"
+    "시간",
+    "실패"
   ],
   "recent_visual_styles": [
-    "ink",
     "photoreal",
     "photography",
     "oil_painting",
     "pencil_sketch",
-    "watercolor"
+    "watercolor",
+    "ink"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-09-09",
     "2026-09-10",
     "2026-09-11",
     "2026-09-12",
@@ -50,6 +49,7 @@
     "2026-09-28",
     "2026-09-29",
     "2026-09-30",
-    "2026-10-01"
+    "2026-10-01",
+    "2026-10-02"
   ]
 }
