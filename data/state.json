@@ -1,6 +1,5 @@
 {
   "recent_topics": [
-    "선택",
     "부모",
     "행복",
     "햇살",
@@ -19,19 +18,19 @@
     "자존",
     "비움",
     "구름",
-    "기억"
+    "기억",
+    "내려놓음"
   ],
   "recent_visual_styles": [
-    "photoreal",
     "ink",
     "watercolor",
     "pencil_sketch",
     "oil_painting",
-    "photography"
+    "photography",
+    "photoreal"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-09-16",
     "2026-09-17",
     "2026-09-18",
     "2026-09-19",
@@ -50,6 +49,7 @@
     "2026-10-05",
     "2026-10-06",
     "2026-10-07",
-    "2026-10-08"
+    "2026-10-08",
+    "2026-10-09"
   ]
 }
