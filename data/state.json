@@ -6,7 +6,6 @@
     "지혜",
     "별빛",
     "고요",
-    "운명",
     "평화",
     "친절",
     "균형",
@@ -19,19 +18,19 @@
     "밤",
     "비움",
     "집중",
-    "열정"
+    "열정",
+    "운명"
   ],
   "recent_visual_styles": [
     "oil_painting",
     "photoreal",
-    "photography",
     "watercolor",
     "ink",
-    "pencil_sketch"
+    "pencil_sketch",
+    "photography"
   ],
   "recent_music_signatures": [],
   "recent_dates": [
-    "2026-10-29",
     "2026-10-30",
     "2026-10-31",
     "2026-11-01",
@@ -50,6 +49,7 @@
     "2026-11-14",
     "2026-11-15",
     "2026-11-16",
-    "2026-11-17"
+    "2026-11-17",
+    "2026-11-18"
   ]
 }
